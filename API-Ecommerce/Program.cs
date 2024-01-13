@@ -26,10 +26,6 @@ builder.Services.AddControllers();
 // Configurar la licencia de QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 //agrego la inyeccion de dependencia de mercado pago, para poder usar el servicio que cree
-builder.Services.Configure<MercadoPagoDevSettings>(builder.Configuration.GetSection("MercadoPagoDev"));
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.Configure<GoogleCloudStorage>(builder.Configuration.GetSection("GoogleCloudStorage"));
-
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
