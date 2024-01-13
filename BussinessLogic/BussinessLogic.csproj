@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="DTO\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DTO/MercadoPago/" />
+    <Folder Include="DTO\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AutoWrapper.Core" Version="4.5.0" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.7.0" />
+    <PackageReference Include="MailKit" Version="4.3.0" />
+    <PackageReference Include="Mapster" Version="7.3.0" />
+    <PackageReference Include="mercadopago-sdk" Version="2.3.3" />
+    <PackageReference Include="QuestPDF" Version="2023.6.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataAccess\DataAccess.csproj" />
+  </ItemGroup>
+</Project>
