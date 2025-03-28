@@ -3,7 +3,7 @@ using DataAccess.Entities;
 
 namespace BussinessLogic.DTO
 {
-    public class CategoriaDTO
+    public class PruebaDTO
     {
         public int Id { get; set; }
 

@@ -77,7 +77,7 @@ builder.Services.AddDbContext<Db_NOMBRE_BASE_Context>(options => options.UseMySQ
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 //AGREGO LOS SERVICIOS QUE VOY A USAR
-builder.Services.AddScoped<ServiceCategoria>();
+builder.Services.AddScoped<ServicePrueba>();
 
 
 

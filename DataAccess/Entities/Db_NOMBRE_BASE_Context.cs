@@ -18,7 +18,7 @@ public partial class Db_NOMBRE_BASE_Context : DbContext
 
 
     //ACA SE AGREGAN LAS TABLAS
-    public virtual DbSet<Categoria> Categoria { get; set; }
+    public virtual DbSet<Prueba> Prueba { get; set; }
 
 
 
@@ -29,14 +29,14 @@ public partial class Db_NOMBRE_BASE_Context : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
 
-          modelBuilder.Entity<Categoria>(entity =>
+          modelBuilder.Entity<Prueba>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.ToTable("categoria");
+            entity.ToTable("Prueba");
 
-            entity.Property(e => e.Id).HasColumnName("Id");
-            entity.Property(e => e.Descripcion).HasColumnName("Descripcion");
+            entity.Property(e => e.Id).HasColumnName("idPrueba");
+            entity.Property(e => e.Descripcion).HasColumnName("desc");
         
         });
 

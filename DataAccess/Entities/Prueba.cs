@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DataAccess.Entities;
 
-public partial class Categoria
+public partial class Prueba
 {
     public int Id { get; set; }
 

@@ -11,14 +11,14 @@ using AutoWrapper.Wrappers;
 namespace API_Ecommerce.Controllers
 {
     [Route("api/[controller]")]
-    public class CategoriaController : GenericController
+    public class PruebaController : GenericController
     {
 
         //Instancio el service que vamos a usar
-        private ServiceCategoria _service;
+        private ServicePrueba _service;
 
         //Inyecto el service por el constructor
-        public CategoriaController(ServiceCategoria service)
+        public PruebaController(ServicePrueba service)
         {
             _service = service;
         }
@@ -26,13 +26,13 @@ namespace API_Ecommerce.Controllers
 
         //Metodo para traer todas las categorias
         [HttpGet]
-        [Route("/categorias")]
-        public async Task<ApiResponse> GetCategorias()
+        [Route("/getAll_prueba")]
+        public async Task<ApiResponse> GetAll_Ejemplo()
         {
             try
             {
-                IList<CategoriaDTO> categorias = await _service.GetAllCategorias();
-                ApiResponse response = new ApiResponse(new { data = categorias, cantidadCategorias = categorias.Count() });
+                IList<PruebaDTO> pruebas = await _service.GetAll_PRUEBA();
+                ApiResponse response = new ApiResponse(new { data = pruebas, cantidad = pruebas.Count() });
                 return response;
             }
             catch (Exception ex)
