@@ -3,7 +3,7 @@ using System.Net;
 using AutoWrapper.Wrappers;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API_Ecommerce.Controllers
+namespace API_Client.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

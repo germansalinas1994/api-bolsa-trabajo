@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using AutoWrapper.Wrappers;
 
 
-namespace API_Ecommerce.Controllers
+namespace API_Client.Controllers
 {
     [Route("api/[controller]")]
     public class PruebaController : GenericController
