@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DataAccess.Entities;
 
-public partial class DbveterinariaContext : DbContext
+public partial class Db_NOMBRE_BASE_Context : DbContext
 {
-    public DbveterinariaContext()
+    public Db_NOMBRE_BASE_Context()
     {
     }
 
-    public DbveterinariaContext(DbContextOptions<DbveterinariaContext> options)
+    public Db_NOMBRE_BASE_Context(DbContextOptions<Db_NOMBRE_BASE_Context> options)
         : base(options)
     {
     }

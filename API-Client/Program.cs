@@ -60,7 +60,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // ADD Entity framework con mysql
 
-builder.Services.AddDbContext<DbveterinariaContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("dbConnection")));
+builder.Services.AddDbContext<Db_NOMBRE_BASE_Context>(options => options.UseMySQL(builder.Configuration.GetConnectionString("dbConnection")));
 
 //agrego la inyeccion de dependencia de los repositorios y el UnitOfWork
 
@@ -85,9 +85,12 @@ builder.Services.AddCors(opciones =>
 });
 
 
-//este tambien funciono
+
+
+//esto hacemos en caso de que queramos agregar autenticacion con auth0 para verificar el token y captarlo por headers de la peticion
 
 // var domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
+
 // builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // .AddJwtBearer(options =>
 // {
@@ -95,52 +98,39 @@ builder.Services.AddCors(opciones =>
 //     options.Audience = builder.Configuration["Auth0:Audience"];
 //     options.TokenValidationParameters = new TokenValidationParameters
 //     {
-//         NameClaimType = ClaimTypes.NameIdentifier
+//         NameClaimType = ClaimTypes.NameIdentifier,
+//         // Configuración para validar la firma del token
+//         ValidateIssuerSigningKey = true,
+//         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Auth0:SecretKey"])),
+
+//         // Estas son configuraciones adicionales que puedes necesitar
+//         ValidateIssuer = true,
+//         ValidateAudience = true,
+//         ValidateLifetime = true,
+//         ValidIssuer = domain,
+//         ValidAudience = builder.Configuration["Auth0:Audience"]
 //     };
 // });
 
 
+//Esto hacemos para agregar roles y validaciones con auth0
+// builder.Services.AddAuthorization(options =>
+// {
+//     options.AddPolicy("Admin", policy =>
+//         policy.RequireAssertion(context =>
+//             context.User.HasClaim(c =>
+//                 c.Type == "user_rol" && c.Value == "Administrador")));
 
-var domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
+//     options.AddPolicy("Sucursal", policy =>
+//         policy.RequireAssertion(context =>
+//             context.User.HasClaim(c =>
+//                 c.Type == "user_rol" && c.Value == "Sucursal")));
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-.AddJwtBearer(options =>
-{
-    options.Authority = domain;
-    options.Audience = builder.Configuration["Auth0:Audience"];
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        NameClaimType = ClaimTypes.NameIdentifier,
-        // Configuración para validar la firma del token
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Auth0:SecretKey"])),
-
-        // Estas son configuraciones adicionales que puedes necesitar
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidIssuer = domain,
-        ValidAudience = builder.Configuration["Auth0:Audience"]
-    };
-});
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("Admin", policy =>
-        policy.RequireAssertion(context =>
-            context.User.HasClaim(c =>
-                c.Type == "user_rol" && c.Value == "Administrador")));
-
-    options.AddPolicy("Sucursal", policy =>
-        policy.RequireAssertion(context =>
-            context.User.HasClaim(c =>
-                c.Type == "user_rol" && c.Value == "Sucursal")));
-
-    options.AddPolicy("Cliente", policy =>
-        policy.RequireAssertion(context =>
-            context.User.HasClaim(c =>
-                c.Type == "user_rol" && c.Value == "Cliente")));
-});
+//     options.AddPolicy("Cliente", policy =>
+//         policy.RequireAssertion(context =>
+//             context.User.HasClaim(c =>
+//                 c.Type == "user_rol" && c.Value == "Cliente")));
+// });
 
 
 
@@ -153,7 +143,7 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<DbveterinariaContext>();
+        var context = services.GetRequiredService<Db_NOMBRE_BASE_Context>();
         context.Database.EnsureCreated();
     }
     catch (Exception ex)

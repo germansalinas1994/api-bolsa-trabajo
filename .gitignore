@@ -1,18 +1,14 @@
-# .NET Core
-## Build artifacts
+# Ignore macOS system files
+.DS_Store
 
-../.DS_Store
+# Ignore build artifacts
+**/bin/
+**/obj/
 
-bin/
-obj/
-
-## .NET Core Tools
-Tools/
-
-## Visual Studio Code
+# VS Code
 .vscode/
 
-## Visual Studio
+# Visual Studio files (por si alguien lo abre ahí)
 *.user
 *.suo
 *.cache
@@ -21,11 +17,6 @@ Tools/
 *.log
 *.vspscc
 *.vssscc
-*.obj
-*.bin
-*.ncb
-*.sbr
-*.scc
 *.tlb
 *.tlh
 *.tmp
