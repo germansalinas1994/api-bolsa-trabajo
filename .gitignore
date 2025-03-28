@@ -1,5 +1,8 @@
 # .NET Core
 ## Build artifacts
+
+../.DS_Store
+
 bin/
 obj/
 
