@@ -1,0 +1,13 @@
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/bin/Debug/net9.0/DataAccess.deps.json
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/bin/Debug/net9.0/DataAccess.dll
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/bin/Debug/net9.0/DataAccess.pdb
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.csproj.AssemblyReference.cache
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.AssemblyInfoInputs.cache
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.AssemblyInfo.cs
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.csproj.CoreCompileInputs.cache
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.sourcelink.json
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.dll
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/refint/DataAccess.dll
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/DataAccess.pdb
+/Users/germansalinas/Documents/Proyectos 2025/backendBlank/DataAccess/obj/Debug/net9.0/ref/DataAccess.dll
