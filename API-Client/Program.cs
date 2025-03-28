@@ -13,8 +13,9 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using AutoWrapper;
-using BussinessLogic.DTO.Email;
+// using BussinessLogic.DTO.Email;
 using Microsoft.OpenApi.Models;
+using BussinessLogic.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,9 +26,13 @@ builder.Services.AddControllers();
 
 // Configurar la licencia de QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
-//agrego la inyeccion de dependencia de mercado pago, para poder usar el servicio que cree
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
+//ASI SE AGREGAN LAS DEPENDENCIAS PARA LOS CASOS DE USO
+// builder.Services.Configure<MercadoPagoDevSettings>(builder.Configuration.GetSection("MercadoPagoDev"));
+// builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+// builder.Services.Configure<GoogleCloudStorage>(builder.Configuration.GetSection("GoogleCloudStorage"));builder.Services.AddEndpointsApiExplorer();
+
+
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Mi API", Version = "v1" });
@@ -71,6 +76,8 @@ builder.Services.AddDbContext<Db_NOMBRE_BASE_Context>(options => options.UseMySQ
 
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+//AGREGO LOS SERVICIOS QUE VOY A USAR
+builder.Services.AddScoped<ServiceCategoria>();
 
 
 
