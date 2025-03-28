@@ -1,0 +1,47 @@
+# .NET Core
+## Build artifacts
+bin/
+obj/
+
+## .NET Core Tools
+Tools/
+
+## Visual Studio Code
+.vscode/
+
+## Visual Studio
+*.user
+*.suo
+*.cache
+*.pdb
+*.dll.refresh
+*.log
+*.vspscc
+*.vssscc
+*.obj
+*.bin
+*.ncb
+*.sbr
+*.scc
+*.tlb
+*.tlh
+*.tmp
+*.ilk
+*.res
+*.pch
+*.ipch
+*.aps
+*.prop
+*.lnk
+*.tlog
+*.manifest
+*.exe
+*.dll
+*.psess
+*.rdlc.user
+*.dbmdl
+*.dbproj.user
+*.dbproj
+*.snk
+*.sln.docstates
+*.vs

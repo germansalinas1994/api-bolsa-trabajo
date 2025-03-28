@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 25.0.1706.3
@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "02-BussinessLogic", "02-Bus
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03-DataAccess", "03-DataAccess", "{41E9707B-9FC3-42AE-B997-338AB06639E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API-Ecommerce", "API-Ecommerce\API-Ecommerce.csproj", "{65B91C9D-69E2-4B94-8825-7DE43B95B3B4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API-Client", "API-Client\API-Client.csproj", "{65B91C9D-69E2-4B94-8825-7DE43B95B3B4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BussinessLogic", "BussinessLogic\BussinessLogic.csproj", "{135C21F2-1610-481D-8646-FEF6BF17F794}"
 EndProject
