@@ -25,9 +25,9 @@ namespace API_Client.Controllers
 
                 return email;
             }
-            catch(ApiException ex)
+            catch(ApiException)
             {
-                throw ex;
+                throw;
             }
             catch(Exception ex)
             {

@@ -5,6 +5,7 @@ using DataAccess.IRepository;
 using DataAccess.Entities;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using AutoWrapper.Wrappers;
 
 namespace BussinessLogic.Services
 {
@@ -33,12 +34,18 @@ namespace BussinessLogic.Services
                 //Devuelvo las categorias
                 return categoriasDTO;
             }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
             catch (Exception ex)
             {
-                throw ex;
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
             }
         }
-   
+
 
     }
 }

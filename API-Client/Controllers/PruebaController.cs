@@ -22,11 +22,16 @@ namespace API_Client.Controllers
         {
             _service = service;
         }
-        // GET: api/values
 
         //Metodo para traer todas las categorias
         [HttpGet]
         [Route("/getAll_prueba")]
+        [ProducesResponseType(typeof(PruebaDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
         public async Task<ApiResponse> GetAll_Ejemplo()
         {
             try
@@ -35,19 +40,22 @@ namespace API_Client.Controllers
                 ApiResponse response = new ApiResponse(new { data = pruebas, cantidad = pruebas.Count() });
                 return response;
             }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
             catch (Exception ex)
             {
-                while (ex.InnerException != null)
-                {
-                    ex = ex.InnerException;
-                }
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
                 throw new ApiException(ex);
             }
 
 
         }
 
-       
 
     }
 }
