@@ -16,6 +16,7 @@ using AutoWrapper;
 // using BussinessLogic.DTO.Email;
 using Microsoft.OpenApi.Models;
 using BussinessLogic.Services;
+using Microsoft.AspNetCore.Authorization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -120,7 +121,7 @@ builder.Services.AddCors(opciones =>
 // });
 
 
-//Esto hacemos para agregar roles y validaciones con auth0
+// //Esto hacemos para agregar roles y validaciones con auth0
 // builder.Services.AddAuthorization(options =>
 // {
 //     options.AddPolicy("Admin", policy =>
@@ -137,6 +138,12 @@ builder.Services.AddCors(opciones =>
 //         policy.RequireAssertion(context =>
 //             context.User.HasClaim(c =>
 //                 c.Type == "user_rol" && c.Value == "Cliente")));
+//     // Fallback global: todo requiere autenticación, para que no lo requiera 
+//     // se debe agregar [AllowAnonymous] en el controlador o en la acción
+//     options.FallbackPolicy = new AuthorizationPolicyBuilder()
+//         .RequireAuthenticatedUser()
+//         .Build();
+
 // });
 
 
