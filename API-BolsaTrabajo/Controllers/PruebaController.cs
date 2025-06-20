@@ -71,12 +71,12 @@ namespace API_Client.Controllers
                 //lanzo la excepcion que se captura en el service
                 throw;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 // Manejo de excepciones
                 // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
 
-                throw new ApiException(e);
+                throw new ApiException(ex);
             }
 
 
