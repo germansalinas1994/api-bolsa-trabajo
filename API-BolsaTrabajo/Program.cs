@@ -36,7 +36,7 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Mi API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "API_BolsaTrabajo", Version = "v1" });
 
     // Configurar Swagger para usar Authorization
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -66,7 +66,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // ADD Entity framework con mysql
 
-builder.Services.AddDbContext<Db_NOMBRE_BASE_Context>(options => options.UseMySQL(builder.Configuration.GetConnectionString("dbConnection")));
+builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection")));
 
 //agrego la inyeccion de dependencia de los repositorios y el UnitOfWork
 
@@ -157,7 +157,7 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<Db_NOMBRE_BASE_Context>();
+        var context = services.GetRequiredService<DbBolsaTrabajoContext>();
         context.Database.EnsureCreated();
     }
     catch (Exception ex)

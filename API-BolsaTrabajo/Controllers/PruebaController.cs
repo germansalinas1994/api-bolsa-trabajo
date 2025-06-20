@@ -37,7 +37,7 @@ namespace API_Client.Controllers
             try
             {
                 IList<PruebaDTO> pruebas = await _service.GetAll_PRUEBA();
-                ApiResponse response = new ApiResponse(new { data = pruebas, cantidad = pruebas.Count() });
+                ApiResponse response = new ApiResponse(new { data = pruebas, cantidad = pruebas.Count });
                 return response;
             }
             catch (ApiException)

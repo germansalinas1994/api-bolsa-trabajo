@@ -13,14 +13,14 @@ namespace DataAccess.Repository
     public class UnitOfWork : IUnitOfWork
     {
 
-        protected readonly Db_NOMBRE_BASE_Context _context;
+        protected readonly DbBolsaTrabajoContext _context;
         private IDbContextTransaction _transaction;
 
 
 
         //tengo que crear _transaction
 
-        public UnitOfWork(Db_NOMBRE_BASE_Context context)
+        public UnitOfWork(DbBolsaTrabajoContext context)
         {
             _context = context;
 
