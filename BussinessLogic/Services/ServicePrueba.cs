@@ -20,6 +20,35 @@ namespace BussinessLogic.Services
             _unitOfWork = unitOfWork;
         }
 
+        public async Task Add_PRUEBA(PruebaDTO nuevaPrueba)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                //Mapeo la nueva categoria a Categoria
+                Prueba newPrueba = new Prueba
+                {
+                    Name = nuevaPrueba.Name,
+                    Email = nuevaPrueba.Email
+                };
+
+                //Agrego la nueva categoria al repositorio
+                await _unitOfWork.GenericRepository<Prueba>().Insert(newPrueba);
+
+                await _unitOfWork.CommitAsync();
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+        }
+
         //Metodo para traer todas las categorias
         public async Task<IList<PruebaDTO>> GetAll_PRUEBA()
         {

@@ -35,8 +35,9 @@ public partial class DbBolsaTrabajoContext : DbContext
 
             entity.ToTable("Prueba");
 
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Nombre).HasColumnName("name");
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).HasColumnName("name").IsRequired();
+            entity.Property(e => e.Email).HasColumnName("email").IsRequired();
         
         });
 

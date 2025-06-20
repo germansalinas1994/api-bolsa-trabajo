@@ -57,6 +57,31 @@ namespace API_Client.Controllers
         }
 
 
+        [HttpPost]
+        [Route("/add_prueba")]
+        public async Task<ApiResponse> Add_Prueba([FromBody] PruebaDTO nuevaPrueba)
+        {
+            try
+            {
+                await _service.Add_PRUEBA(nuevaPrueba);
+                return new ApiResponse(new { message = "Prueba agregada exitosamente." });
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
+                throw new ApiException(ex);
+            }
+
+
+        }
+
     }
 }
 

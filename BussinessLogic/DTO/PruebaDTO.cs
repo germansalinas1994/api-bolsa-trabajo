@@ -5,9 +5,9 @@ namespace BussinessLogic.DTO
 {
     public class PruebaDTO
     {
-        public int Id { get; set; }
+        public string? Name { get; set; }
 
-        public string? Descripcion { get; set; }
+        public string? Email { get; set; }
 
 
     }
