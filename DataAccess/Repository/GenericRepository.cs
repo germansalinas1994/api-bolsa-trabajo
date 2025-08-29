@@ -99,7 +99,7 @@ namespace DataAccess.Repository
 
             // Establecemos la fecha y hora actuales en la propiedad FechaHasta
             // Asumimos que todas las entidades tienen esta propiedad
-            var propertyInfo = entity.GetType().GetProperty("FechaHasta");
+            var propertyInfo = entity.GetType().GetProperty("FechaBaja");
             if (propertyInfo == null)
             {
                 // La entidad no tiene la propiedad FechaHasta, retornamos false

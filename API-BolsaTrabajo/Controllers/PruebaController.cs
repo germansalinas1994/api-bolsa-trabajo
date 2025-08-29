@@ -63,7 +63,7 @@ namespace API_Client.Controllers
         {
             try
             {
-                await _service.Add_PRUEBA(nuevaPrueba);
+                // await _service.Add_PRUEBA(nuevaPrueba);
                 return new ApiResponse(new { message = "Prueba agregada exitosamente." });
             }
             catch (ApiException)

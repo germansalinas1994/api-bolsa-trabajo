@@ -28,8 +28,8 @@ namespace BussinessLogic.Services
                 //Mapeo la nueva categoria a Categoria
                 Prueba newPrueba = new Prueba
                 {
-                    Name = nuevaPrueba.Name,
-                    Email = nuevaPrueba.Email
+                    Name = nuevaPrueba.Codigo,
+                    Email = nuevaPrueba.Nombre
                 };
 
                 //Agrego la nueva categoria al repositorio
@@ -55,7 +55,7 @@ namespace BussinessLogic.Services
             try
             {
                 //Traigo todas las categorias
-                var categorias = await _unitOfWork.GenericRepository<Prueba>().GetAll();
+                var categorias = await _unitOfWork.GenericRepository<EstadoOferta>().GetAll();
 
                 //Mapeo las categorias a CategoriaDTO
                 var categoriasDTO = categorias.Adapt<IList<PruebaDTO>>();
