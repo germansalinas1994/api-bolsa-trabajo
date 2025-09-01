@@ -20,20 +20,19 @@ namespace BussinessLogic.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task Add_PRUEBA(PruebaDTO nuevaPrueba)
+        public async Task Add_PRUEBA(OfertaDTO nuevaPrueba)
         {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
                 //Mapeo la nueva categoria a Categoria
-                Prueba newPrueba = new Prueba
+                Oferta newPrueba = new Oferta
                 {
-                    Name = nuevaPrueba.Codigo,
-                    Email = nuevaPrueba.Nombre
+
                 };
 
                 //Agrego la nueva categoria al repositorio
-                await _unitOfWork.GenericRepository<Prueba>().Insert(newPrueba);
+                await _unitOfWork.GenericRepository<Oferta>().Insert(newPrueba);
 
                 await _unitOfWork.CommitAsync();
             }
@@ -50,18 +49,17 @@ namespace BussinessLogic.Services
         }
 
         //Metodo para traer todas las categorias
-        public async Task<IList<PruebaDTO>> GetAll_PRUEBA()
+        public async Task<IList<OfertaDTO>> GetAll_PRUEBA()
         {
             try
             {
+                List<OfertaDTO> ofertas = new List<OfertaDTO>();
                 //Traigo todas las categorias
-                var categorias = await _unitOfWork.GenericRepository<EstadoOferta>().GetAll();
-
-                //Mapeo las categorias a CategoriaDTO
-                var categoriasDTO = categorias.Adapt<IList<PruebaDTO>>();
-
-                //Devuelvo las categorias
-                return categoriasDTO;
+                // var ofertas = await _unitOfWork.GenericRepository<Oferta>().GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(l => l.Provincia).ThenInclude(l => l.Pais));
+                List<OfertaCategoria> oh = (await _unitOfWork.GenericRepository<OfertaCategoria>().GetAllIncludingAllRelations()).ToList();
+                
+                // List<OfertaDTO> ofertas = (await _unitOfWork.GenericRepository<Oferta>().GetAll()).Adapt<List<OfertaDTO>>();
+                return ofertas;
             }
             catch (ApiException)
             {

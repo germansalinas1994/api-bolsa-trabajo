@@ -6,6 +6,7 @@ using BussinessLogic.DTO;
 using BussinessLogic.Services;
 using Microsoft.AspNetCore.Mvc;
 using AutoWrapper.Wrappers;
+using DataAccess.Entities;
 
 
 namespace API_Client.Controllers
@@ -26,7 +27,7 @@ namespace API_Client.Controllers
         //Metodo para traer todas las categorias
         [HttpGet]
         [Route("/getAll_prueba")]
-        [ProducesResponseType(typeof(PruebaDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OfertaDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
@@ -36,7 +37,7 @@ namespace API_Client.Controllers
         {
             try
             {
-                IList<PruebaDTO> pruebas = await _service.GetAll_PRUEBA();
+                IList<OfertaDTO> pruebas = await _service.GetAll_PRUEBA();
                 ApiResponse response = new ApiResponse(new { data = pruebas, cantidad = pruebas.Count });
                 return response;
             }
@@ -59,7 +60,7 @@ namespace API_Client.Controllers
 
         [HttpPost]
         [Route("/add_prueba")]
-        public async Task<ApiResponse> Add_Prueba([FromBody] PruebaDTO nuevaPrueba)
+        public async Task<ApiResponse> Add_Prueba([FromBody] OfertaDTO nuevaPrueba)
         {
             try
             {

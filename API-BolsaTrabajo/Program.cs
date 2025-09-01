@@ -17,6 +17,7 @@ using AutoWrapper;
 using Microsoft.OpenApi.Models;
 using BussinessLogic.Services;
 using Microsoft.AspNetCore.Authorization;
+using DataAccess;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -156,22 +157,31 @@ var app = builder.Build();
 
 
 
+// using (var scope = app.Services.CreateScope())
+// {
+//     var services = scope.ServiceProvider;
+//     try
+//     {
+//         var context = services.GetRequiredService<DbBolsaTrabajoContext>();
+//         context.Database.EnsureCreated();
+//     }
+//     catch (Exception ex)
+//     {
+//         var logger = services.GetRequiredService<ILogger<Program>>();
+//         logger.LogError(ex, "An error occurred creating the DB.");
+//     }
+// }
+
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    try
+    var ctx = scope.ServiceProvider.GetRequiredService<DbBolsaTrabajoContext>();
+    if (!ctx.Database.CanConnect())
     {
-        var context = services.GetRequiredService<DbBolsaTrabajoContext>();
-        context.Database.EnsureCreated();
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred creating the DB.");
+        // Opcional: loggear o lanzar error controlado
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError("No se pudo conectar a la base de datos.");
     }
 }
-
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
