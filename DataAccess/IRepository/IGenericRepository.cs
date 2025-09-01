@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using DataAccess.Entities;
+using DataAccess;
 using Microsoft.EntityFrameworkCore.Query;
 
 namespace DataAccess.IRepository
@@ -14,6 +14,10 @@ namespace DataAccess.IRepository
     {
         Task<IList<T>> GetAll();
         Task<IList<T>> GetAllIncludingRelations();
+        Task<IList<T>> GetAllIncludingSpecificRelations(
+                  Func<IQueryable<T>, IIncludableQueryable<T, object>> include,
+                  bool asNoTracking = true);
+
         Task<T?> GetById(int id);
         Task<T?> GetByIdIncludingRelations(int id);
 
@@ -26,7 +30,7 @@ namespace DataAccess.IRepository
 
         Task<IList<T>> GetByCriteriaIncludingRelations(Expression<Func<T, bool>> predicate);
         Task<IList<T>> GetByCriteriaIncludingSpecificRelations(Expression<Func<T, bool>> predicate, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
-
+        Task<IList<T>> GetAllIncludingAllRelations(int maxDepth = 5, bool asNoTracking = true);
         IQueryable<T> Search();
 
 

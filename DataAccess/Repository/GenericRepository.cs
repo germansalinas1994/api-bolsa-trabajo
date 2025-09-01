@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DataAccess.IRepository;
-using DataAccess.Entities;
+using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Metadata;
+
 
 namespace DataAccess.Repository
 {
@@ -232,6 +234,88 @@ namespace DataAccess.Repository
                 throw;
             }
         }
+
+        public async Task<IList<T>> GetAllIncludingSpecificRelations(
+           Func<IQueryable<T>, IIncludableQueryable<T, object>> include,
+           bool asNoTracking = true)
+        {
+            IQueryable<T> query = _context.Set<T>();
+
+            // Aplico los Include/ThenInclude que me pasen desde el caso de uso
+            if (include != null)
+                query = include(query);
+
+            // Para solo lectura conviene NO trackear (mejor rendimiento)
+            if (asNoTracking)
+                query = query.AsNoTracking();
+
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Trae T incluyendo TODAS las relaciones de referencia (no colecciones) de forma recursiva,
+        /// siguiendo la misma lógica de tus otros métodos (metadatos + Include(string)).
+        /// </summary>
+        public async Task<IList<T>> GetAllIncludingAllRelations(int maxDepth = 5, bool asNoTracking = true)
+        {
+            if (maxDepth < 1) maxDepth = 1;
+
+            IQueryable<T> query = _context.Set<T>();
+            if (asNoTracking) query = query.AsNoTracking();
+
+            var includePaths = BuildReferenceIncludePaths(typeof(T), maxDepth);
+
+            foreach (var path in includePaths)
+                query = query.Include(path);
+
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Construye rutas de Include "A.B.C" SOLO para navegaciones de referencia (no colecciones),
+        /// recursivamente hasta 'maxDepth'. Como mapeaste sin inversas, no deberías tener ciclos,
+        /// igual se agrega una protección ligera por tipo.
+        /// </summary>
+        private IEnumerable<string> BuildReferenceIncludePaths(Type rootClrType, int maxDepth)
+        {
+            var paths = new HashSet<string>();
+            var rootEntity = _context.Model.FindEntityType(rootClrType);
+            if (rootEntity is null) return paths;
+
+            void Recurse(IEntityType current, string basePath, int depth, HashSet<IEntityType> stack)
+            {
+                if (depth == 0) return;
+
+                // Tomar SOLO referencias (no colecciones)
+                var refNavs = current.GetNavigations()
+                                     .Where(n => !n.IsCollection);
+
+                foreach (var nav in refNavs)
+                {
+                    var nextPath = string.IsNullOrEmpty(basePath) ? nav.Name : $"{basePath}.{nav.Name}";
+                    // agregamos la ruta actual
+                    paths.Add(nextPath);
+
+                    var target = nav.TargetEntityType;
+
+                    // Protección mínima por tipo (no debería dispararse en tu mapeo unidireccional)
+                    if (stack.Add(target))
+                    {
+                        Recurse(target, nextPath, depth - 1, stack);
+                        stack.Remove(target);
+                    }
+                }
+            }
+
+            var stack = new HashSet<IEntityType> { rootEntity };
+            Recurse(rootEntity, string.Empty, maxDepth, stack);
+
+            return paths;
+        }
+
+
+
+
     }
 
 }

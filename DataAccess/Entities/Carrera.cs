@@ -3,11 +3,12 @@ using System.Collections.Generic;
 
 namespace DataAccess.Entities;
 
-public partial class Prueba
+public partial class Carrera
 {
     public int Id { get; set; }
 
-    public string Name { get; set; }
-    public string Email { get; set; }
+    public string Codigo { get; set; } = null!;
+
+    public string? Nombre { get; set; }
 
 }

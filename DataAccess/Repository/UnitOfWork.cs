@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
 using DataAccess.IRepository;
-using DataAccess.Entities;
+using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
