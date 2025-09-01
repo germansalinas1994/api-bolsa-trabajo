@@ -2,7 +2,7 @@
 using DataAccess.Entities;
 
 namespace BussinessLogic.DTO
-{
+{ 
     public class OfertaDTO
     {
         public string Titulo { get; set; }
