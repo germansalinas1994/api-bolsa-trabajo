@@ -154,7 +154,9 @@ public partial class DbBolsaTrabajoContext : DbContext
         modelBuilder.Entity<Postulacion>(e =>
      {
          e.HasOne(x => x.Oferta)
-         .WithMany()
+         //si quisiera mapear una relacion inversa para traer la coleccion directamente
+         .WithMany(o => o.Postulaciones)
+        //  .WithMany()
          .HasForeignKey(x => x.IdOferta);
 
          e.HasOne(x => x.PerfilCandidato)
@@ -173,21 +175,21 @@ public partial class DbBolsaTrabajoContext : DbContext
                .HasForeignKey(x => x.IdPostulacion);
            });
 
-            modelBuilder.Entity<Provincia>(e =>
-           {
-               e.HasOne(x => x.Pais)
-               .WithMany()
-               .HasForeignKey(x => x.IdPais);
+        modelBuilder.Entity<Provincia>(e =>
+       {
+           e.HasOne(x => x.Pais)
+           .WithMany()
+           .HasForeignKey(x => x.IdPais);
 
-           });
+       });
 
-             modelBuilder.Entity<Usuario>(e =>
-           {
-               e.HasOne(x => x.Rol)
-               .WithMany()
-               .HasForeignKey(x => x.IdRol);
+        modelBuilder.Entity<Usuario>(e =>
+      {
+          e.HasOne(x => x.Rol)
+          .WithMany()
+          .HasForeignKey(x => x.IdRol);
 
-           });
+      });
 
 
 

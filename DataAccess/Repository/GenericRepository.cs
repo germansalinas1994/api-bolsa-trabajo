@@ -39,15 +39,18 @@ namespace DataAccess.Repository
         //Metodo para traer un dato de un tipo de objeto por id
         public async Task<T?> GetById(int id)
         {
+            // Validamos que la entidad tenga PK y que sea int
+            var entityType = _context.Model.FindEntityType(typeof(T))
+                             ?? throw new InvalidOperationException($"Tipo {typeof(T).Name} no está mapeado en el DbContext.");
 
-            //Esto lo hace por la base, hace el where de la base confirmado
-            var entity = await _context.Set<T>().FindAsync(id);
+            var pk = entityType.FindPrimaryKey()
+                     ?? throw new InvalidOperationException($"Tipo {typeof(T).Name} no tiene clave primaria definida.");
 
-            if (entity == null)
-            {
-                return null;
-            }
-            return entity;
+            if (pk.Properties.Count != 1 || pk.Properties[0].ClrType != typeof(int))
+                throw new InvalidOperationException($"El repositorio espera una PK int simple, pero {typeof(T).Name} tiene otra configuración.");
+
+            // Si pasa la validación, usamos FindAsync
+            return await _context.Set<T>().FindAsync(id);
         }
         #endregion
 
@@ -196,44 +199,73 @@ namespace DataAccess.Repository
             return _context.Set<T>().AsQueryable();
         }
 
-
-
-
-        public async Task<T?> GetByIdIncludingRelations(int id)
+        public async Task<T?> GetByIdIncludingRelations(
+            int id)
         {
-            try
-            {
-                var query = _context.Set<T>().AsQueryable();
+            // 1) Validación por metadatos: entidad mapeada y PK int simple
+            var entityType = _context.Model.FindEntityType(typeof(T))
+                             ?? throw new InvalidOperationException($"Tipo {typeof(T).Name} no está mapeado en el DbContext.");
 
-                // Obtener las propiedades de navegación de la entidad T
-                var entityType = _context.Model.FindEntityType(typeof(T));
-                var navigationProperties = entityType.GetNavigations().Select(nav => nav.Name);
+            var pk = entityType.FindPrimaryKey()
+                     ?? throw new InvalidOperationException($"Tipo {typeof(T).Name} no tiene clave primaria definida.");
 
-                // Incluir cada propiedad de navegación
-                foreach (var navigationProperty in navigationProperties)
-                {
-                    query = query.Include(navigationProperty);
-                }
+            if (pk.Properties.Count != 1 || pk.Properties[0].ClrType != typeof(int) || pk.Properties[0].Name != "Id")
+                throw new InvalidOperationException($"Se esperaba una PK simple 'Id' de tipo int para {typeof(T).Name}.");
 
-                // Construir el nombre de la clave primaria siguiendo la convención 'Id' + Nombre de la Clase
-                var primaryKey = "Id" + typeof(T).Name;
+            // 2) Query base
+            IQueryable<T> query = _context.Set<T>();
 
-                // Crear una expresión lambda para filtrar por la clave primaria
-                var parameter = Expression.Parameter(typeof(T), "x");
-                var property = Expression.Property(parameter, primaryKey);
-                var constant = Expression.Constant(id);
-                var equals = Expression.Equal(property, constant);
-                var lambda = Expression.Lambda<Func<T, bool>>(equals, parameter);
+            // Includes de primer nivel (mismo estilo que tu repo)
+            foreach (var navName in entityType.GetNavigations().Select(n => n.Name))
+                query = query.Include(navName);
 
-                return await query.FirstOrDefaultAsync(lambda);
-            }
-            catch (Exception ex)
-            {
-                // Manejo de la excepción
-                // Aquí puedes registrar el error o manejarlo según tu política de manejo de errores.
-                throw;
-            }
+
+            // 3) Filtro por Id (int)
+            var param = Expression.Parameter(typeof(T), "x");
+            var prop = Expression.Property(param, "Id");             // PK = "Id"
+            var body = Expression.Equal(prop, Expression.Constant(id));
+            var lambda = Expression.Lambda<Func<T, bool>>(body, param);
+
+            return await query.FirstOrDefaultAsync(lambda);
         }
+
+
+        // public async Task<T?> GetByIdIncludingRelations(int id)
+        // {
+        //     try
+        //     {
+        //         var query = _context.Set<T>().AsQueryable();
+
+        //         // Obtener las propiedades de navegación de la entidad T
+        //         var entityType = _context.Model.FindEntityType(typeof(T));
+        //         var navigationProperties = entityType.GetNavigations().Select(nav => nav.Name);
+
+        //         // Incluir cada propiedad de navegación
+        //         foreach (var navigationProperty in navigationProperties)
+        //         {
+        //             query = query.Include(navigationProperty);
+        //         }
+
+        //         // Construir el nombre de la clave primaria siguiendo la convención 'Id' + Nombre de la Clase
+        //         // var primaryKey = "Id" + typeof(T).Name;
+        //         var primaryKey = "Id";
+
+        //         // Crear una expresión lambda para filtrar por la clave primaria
+        //         var parameter = Expression.Parameter(typeof(T), "x");
+        //         var property = Expression.Property(parameter, primaryKey);
+        //         var constant = Expression.Constant(id);
+        //         var equals = Expression.Equal(property, constant);
+        //         var lambda = Expression.Lambda<Func<T, bool>>(equals, parameter);
+
+        //         return await query.FirstOrDefaultAsync(lambda);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         // Manejo de la excepción
+        //         // Aquí puedes registrar el error o manejarlo según tu política de manejo de errores.
+        //         throw;
+        //     }
+        // }
 
         public async Task<IList<T>> GetAllIncludingSpecificRelations(
            Func<IQueryable<T>, IIncludableQueryable<T, object>> include,
@@ -311,6 +343,54 @@ namespace DataAccess.Repository
             Recurse(rootEntity, string.Empty, maxDepth, stack);
 
             return paths;
+        }
+
+        public async Task<T?> GetByIdIncludingSpecificRelations(
+    object id,
+    Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
+    bool asNoTracking = true,
+    bool asSplitQuery = true)
+        {
+            IQueryable<T> query = _context.Set<T>();
+
+            if (include != null)
+                query = include(query);
+
+            if (asNoTracking)
+                // Si necesitás identidad sin trackeo para grafos grandes:
+                // query = query.AsNoTrackingWithIdentityResolution();
+                query = query.AsNoTracking();
+
+            if (asSplitQuery)
+                query = query.AsSplitQuery();  // evita cartesian explosion con muchos JOINs
+
+            // Detectar PK por metadatos (soporta nombre distinto de "Id")
+            var et = _context.Model.FindEntityType(typeof(T))
+                     ?? throw new InvalidOperationException($"Tipo {typeof(T).Name} no está mapeado.");
+            var pk = et.FindPrimaryKey()
+                     ?? throw new InvalidOperationException($"Tipo {typeof(T).Name} no tiene PK definida.");
+
+            if (pk.Properties.Count != 1)
+                throw new NotSupportedException("Este helper soporta solo clave primaria simple.");
+
+            var keyProp = pk.Properties[0];
+            var keyName = keyProp.Name;                // p.ej. "Id", "OfertaId", etc.
+            var keyClrType = keyProp.ClrType;          // p.ej. typeof(int), typeof(Guid)
+
+            // Construyo x => x.<PK> == (cast)id
+            var param = Expression.Parameter(typeof(T), "x");
+            var propExpr = Expression.Property(param, keyName);
+
+            // Convert id al tipo correcto (maneja int, long, Guid, etc.)
+            object? typedId = id is IConvertible && keyClrType != id.GetType()
+                ? Convert.ChangeType(id, keyClrType)
+                : (keyClrType == typeof(Guid) && id is string s ? Guid.Parse(s) : id);
+
+            var constant = Expression.Constant(typedId, keyClrType);
+            var body = Expression.Equal(propExpr, constant);
+            var lambda = Expression.Lambda<Func<T, bool>>(body, param);
+
+            return await query.FirstOrDefaultAsync(lambda);
         }
 
 

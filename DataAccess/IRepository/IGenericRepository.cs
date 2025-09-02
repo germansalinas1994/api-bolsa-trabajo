@@ -33,6 +33,12 @@ namespace DataAccess.IRepository
         Task<IList<T>> GetAllIncludingAllRelations(int maxDepth = 5, bool asNoTracking = true);
         IQueryable<T> Search();
 
+        Task<T?> GetByIdIncludingSpecificRelations(
+    object id,
+    Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
+    bool asNoTracking = true,
+    bool asSplitQuery = true);
+
 
         //Otros metodos que se pueden implementar en el futuro
 

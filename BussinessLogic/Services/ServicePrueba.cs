@@ -53,12 +53,55 @@ namespace BussinessLogic.Services
         {
             try
             {
+                var nueva = new Oferta
+                {
+                    Titulo = "Oferta PRUEBA (insert genérico)",
+                    Descripcion = "Creada desde GetAll_PRUEBA para testear Insert.",
+                    IdPerfilEmpresa = 1,   // ⚠️ Debe existir
+                    IdModalidad = 1,   // ⚠️ Debe existir
+                    IdTipoContrato = 1,   // ⚠️ Debe existir
+                    IdLocalidad = 1,   // opcional; si no existe, ponelo en null o a un Id válido
+                    FechaInicio = DateTime.UtcNow,
+                    FechaFin = null,
+                    FechaAlta = DateTime.UtcNow,
+                    FechaModificacion = DateTime.UtcNow,
+                    FechaBaja = null
+                };
+
+                // Insert genérico
+                var creada = await _unitOfWork.GenericRepository<Oferta>().Insert(nueva);
+
+
+
                 List<OfertaDTO> ofertas = new List<OfertaDTO>();
                 //Traigo todas las categorias
                 // var ofertas = await _unitOfWork.GenericRepository<Oferta>().GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(l => l.Provincia).ThenInclude(l => l.Pais));
-                List<OfertaCategoria> oh = (await _unitOfWork.GenericRepository<OfertaCategoria>().GetAllIncludingAllRelations()).ToList();
-                
-                // List<OfertaDTO> ofertas = (await _unitOfWork.GenericRepository<Oferta>().GetAll()).Adapt<List<OfertaDTO>>();
+                List<Oferta> oferta = (await _unitOfWork.GenericRepository<Oferta>()
+                    .GetAllIncludingSpecificRelations(q =>
+                        q.Include(o => o.TipoContrato)
+                        .Include(o => o.Postulaciones)
+                         .ThenInclude(p => p.PerfilCandidato)
+                         .ThenInclude(pc => pc.Usuario)
+
+                    )).ToList();
+
+
+                List<Oferta> ofertasByCriteria = (await _unitOfWork.GenericRepository<Oferta>()
+                .GetByCriteriaIncludingSpecificRelations(
+                    o => o.IdTipoContrato == 1,
+                    query => query.Include(l => l.Localidad).ThenInclude(p => p.Provincia).Include(t => t.TipoContrato))
+                    ).ToList();
+
+
+
+
+                Oferta ofertaById = await _unitOfWork.GenericRepository<Oferta>().GetByIdIncludingRelations(2);
+
+
+                Oferta ofertaConRelaciones = await _unitOfWork.GenericRepository<Oferta>().GetByIdIncludingSpecificRelations(2, q => q.Include(t => t.Modalidad));
+
+
+
                 return ofertas;
             }
             catch (ApiException)
