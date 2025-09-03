@@ -26,13 +26,23 @@ namespace BussinessLogic.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
                 //Mapeo la nueva categoria a Categoria
-                Oferta newPrueba = new Oferta
+                Oferta nueva = new Oferta
                 {
-
+                    Titulo = "Oferta PRUEBA (insert genérico)",
+                    Descripcion = "Creada desde GetAll_PRUEBA para testear Insert.",
+                    IdPerfilEmpresa = 1,   // ⚠️ Debe existir
+                    IdModalidad = 1,   // ⚠️ Debe existir
+                    IdTipoContrato = 1,   // ⚠️ Debe existir
+                    IdLocalidad = 1,   // opcional; si no existe, ponelo en null o a un Id válido
+                    FechaInicio = DateTime.UtcNow,
+                    FechaFin = null,
+                    FechaAlta = DateTime.UtcNow,
+                    FechaModificacion = DateTime.UtcNow,
+                    FechaBaja = null
                 };
 
                 //Agrego la nueva categoria al repositorio
-                await _unitOfWork.GenericRepository<Oferta>().Insert(newPrueba);
+                await _unitOfWork.GenericRepository<Oferta>().Insert(nueva);
 
                 await _unitOfWork.CommitAsync();
             }
@@ -53,38 +63,82 @@ namespace BussinessLogic.Services
         {
             try
             {
-                var nueva = new Oferta
-                {
-                    Titulo = "Oferta PRUEBA (insert genérico)",
-                    Descripcion = "Creada desde GetAll_PRUEBA para testear Insert.",
-                    IdPerfilEmpresa = 1,   // ⚠️ Debe existir
-                    IdModalidad = 1,   // ⚠️ Debe existir
-                    IdTipoContrato = 1,   // ⚠️ Debe existir
-                    IdLocalidad = 1,   // opcional; si no existe, ponelo en null o a un Id válido
-                    FechaInicio = DateTime.UtcNow,
-                    FechaFin = null,
-                    FechaAlta = DateTime.UtcNow,
-                    FechaModificacion = DateTime.UtcNow,
-                    FechaBaja = null
-                };
-
-                // Insert genérico
-                var creada = await _unitOfWork.GenericRepository<Oferta>().Insert(nueva);
-
-
-
-                List<OfertaDTO> ofertas = new List<OfertaDTO>();
                 //Traigo todas las categorias
                 // var ofertas = await _unitOfWork.GenericRepository<Oferta>().GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(l => l.Provincia).ThenInclude(l => l.Pais));
                 List<Oferta> oferta = (await _unitOfWork.GenericRepository<Oferta>()
                     .GetAllIncludingSpecificRelations(q =>
-                        q.Include(o => o.TipoContrato)
-                        .Include(o => o.Postulaciones)
-                         .ThenInclude(p => p.PerfilCandidato)
-                         .ThenInclude(pc => pc.Usuario)
+                        q.Include(o => o.Localidad)                      
 
                     )).ToList();
 
+
+
+                return oferta.Adapt<List<OfertaDTO>>();
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+        }
+
+        public async Task<IList<OfertaDTO>> GetByIdIncludingAllRelations()
+        {
+            try
+            {
+                List<OfertaDTO> ofertas = new List<OfertaDTO>();
+
+                Oferta ofertaById = await _unitOfWork.GenericRepository<Oferta>().GetByIdIncludingRelations(2);
+
+
+                return ofertas;
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+        }
+
+
+     public async Task<IList<OfertaDTO>> GetByIdIncludingSpecificsRelations()
+        {
+            try
+            {
+                List<OfertaDTO> ofertas = new List<OfertaDTO>();
+
+
+                Oferta ofertaConRelaciones = await _unitOfWork.GenericRepository<Oferta>().GetByIdIncludingSpecificRelations(2, q => q.Include(t => t.Modalidad));
+
+
+                return ofertas;
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+        }
+
+        public async Task<IList<OfertaDTO>> GetByCriteria()
+        {
+            try
+            {
 
                 List<Oferta> ofertasByCriteria = (await _unitOfWork.GenericRepository<Oferta>()
                 .GetByCriteriaIncludingSpecificRelations(
@@ -94,15 +148,7 @@ namespace BussinessLogic.Services
 
 
 
-
-                Oferta ofertaById = await _unitOfWork.GenericRepository<Oferta>().GetByIdIncludingRelations(2);
-
-
-                Oferta ofertaConRelaciones = await _unitOfWork.GenericRepository<Oferta>().GetByIdIncludingSpecificRelations(2, q => q.Include(t => t.Modalidad));
-
-
-
-                return ofertas;
+                return ofertasByCriteria.Adapt<List<OfertaDTO>>();
             }
             catch (ApiException)
             {

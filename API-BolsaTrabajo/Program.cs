@@ -25,6 +25,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+MapsterConfig.RegisterMappings();
 
 // Configurar la licencia de QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;

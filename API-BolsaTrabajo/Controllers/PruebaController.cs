@@ -57,6 +57,38 @@ namespace API_Client.Controllers
 
         }
 
+        [HttpGet]
+        [Route("/get_by_criteria_prueba")]
+        [ProducesResponseType(typeof(OfertaDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ApiResponse> GetByCriteria()
+        {
+            try
+            {
+                IList<OfertaDTO> pruebas = await _service.GetByCriteria();
+                ApiResponse response = new ApiResponse(new { data = pruebas, cantidad = pruebas.Count });
+                return response;
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
+                throw new ApiException(ex);
+            }
+
+
+        }
+
 
         [HttpPost]
         [Route("/add_prueba")]
@@ -64,7 +96,7 @@ namespace API_Client.Controllers
         {
             try
             {
-                // await _service.Add_PRUEBA(nuevaPrueba);
+                await _service.Add_PRUEBA(nuevaPrueba);
                 return new ApiResponse(new { message = "Prueba agregada exitosamente." });
             }
             catch (ApiException)
