@@ -9,6 +9,7 @@ namespace BussinessLogic.DTO
         public string Descripcion { get; set; }
 
         public string NombreLocalidad { get; set; }
+        public string NombreProvincia { get; set; }
 
 
     }
