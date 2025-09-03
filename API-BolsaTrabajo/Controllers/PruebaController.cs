@@ -26,7 +26,6 @@ namespace API_Client.Controllers
 
         //Metodo para traer todas las categorias
         [HttpGet]
-        [Route("/getAll_prueba")]
         [ProducesResponseType(typeof(OfertaDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
@@ -38,7 +37,7 @@ namespace API_Client.Controllers
             try
             {
                 IList<OfertaDTO> pruebas = await _service.GetAll_PRUEBA();
-                ApiResponse response = new ApiResponse(new { data = pruebas, cantidad = pruebas.Count });
+                ApiResponse response = new ApiResponse(new { data = pruebas });
                 return response;
             }
             catch (ApiException)
@@ -58,7 +57,7 @@ namespace API_Client.Controllers
         }
 
         [HttpGet]
-        [Route("/get_by_criteria_prueba")]
+        [Route("get_by_criteria_prueba")]
         [ProducesResponseType(typeof(OfertaDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
@@ -91,7 +90,7 @@ namespace API_Client.Controllers
 
 
         [HttpPost]
-        [Route("/add_prueba")]
+        [Route("add_prueba")]
         public async Task<ApiResponse> Add_Prueba([FromBody] OfertaDTO nuevaPrueba)
         {
             try

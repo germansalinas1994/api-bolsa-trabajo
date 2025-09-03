@@ -67,7 +67,7 @@ namespace BussinessLogic.Services
                 // var ofertas = await _unitOfWork.GenericRepository<Oferta>().GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(l => l.Provincia).ThenInclude(l => l.Pais));
                 List<Oferta> oferta = (await _unitOfWork.GenericRepository<Oferta>()
                     .GetAllIncludingSpecificRelations(q =>
-                        q.Include(o => o.Localidad)                      
+                        q.Include(o => o.Localidad).ThenInclude(p => p.Provincia).ThenInclude(pa => pa.Pais)                    
 
                     )).ToList();
 
