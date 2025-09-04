@@ -10,17 +10,23 @@ namespace BussinessLogic.DTO
             var config = TypeAdapterConfig.GlobalSettings;
 
             config.Default
-                .IgnoreNullValues(true)         
+                .IgnoreNullValues(true)
                 .NameMatchingStrategy(NameMatchingStrategy.Flexible);
 
 
             // Oferta -> OfertaDTO (incluye Localidad)
             TypeAdapterConfig<Oferta, OfertaDTO>
                 .NewConfig()
+                .Map(d => d.Id, s => s.Id)
                 .Map(d => d.Titulo, s => s.Titulo)
                 .Map(d => d.Descripcion, s => s.Descripcion)
                 .Map(d => d.NombreLocalidad, s => s.Localidad != null ? s.Localidad.Nombre : null)
-                .Map(d => d.NombreProvincia, s => s.Localidad.Provincia.Nombre);
+                .Map(d => d.NombreEmpresa, s => s.PerfilEmpresa.Usuario.Nombre)
+                .Map(d => d.TipoContrato, s => s.TipoContrato.Nombre)
+                .Map(d => d.Modalidad, s => s.Modalidad.Nombre)
+                .Map(d => d.FechaInicio, s => s.FechaInicio.ToShortDateString())
+                .Map(d => d.FechaFin, s => s.FechaFin.HasValue ? s.FechaFin.Value.ToShortDateString() : "");
+                
                 
         }
     }

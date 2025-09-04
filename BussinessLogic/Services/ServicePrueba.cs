@@ -66,7 +66,15 @@ namespace BussinessLogic.Services
                 //Traigo todas las categorias
                 // var ofertas = await _unitOfWork.GenericRepository<Oferta>().GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(l => l.Provincia).ThenInclude(l => l.Pais));
                 List<Oferta> oferta = (await _unitOfWork.GenericRepository<Oferta>()
-                    .GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(p => p.Provincia))
+                    .GetAllIncludingSpecificRelations(
+                        q => q.Include(pe => pe.PerfilEmpresa)
+                        .ThenInclude(u => u.Usuario)
+                        .Include(m => m.Modalidad)
+                        .Include(tc => tc.TipoContrato)
+                        .Include(l => l.Localidad)
+                        .ThenInclude(p => p.Provincia)
+                        .ThenInclude(p => p.Pais)
+                )
 
                     ).ToList();
 
