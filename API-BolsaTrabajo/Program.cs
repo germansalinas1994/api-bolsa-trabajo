@@ -83,8 +83,7 @@ builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlSe
 
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-//AGREGO LOS SERVICIOS QUE VOY A USAR
-builder.Services.AddScoped<ServicePrueba>();
+builder.Services.AddScoped<ServicePublicacion>();
 
 
 
