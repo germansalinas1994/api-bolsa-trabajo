@@ -9,18 +9,11 @@ using AutoWrapper.Wrappers;
 
 namespace BussinessLogic.Services
 {
-    public class ServicePublicacion
+    public class ServicePublicacion : GenericService
     {
-        //Instancio el UnitOfWork que vamos a usar
-        private readonly IUnitOfWork _unitOfWork;
+        public ServicePublicacion(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
-        //Inyecto el UnitOfWork por el constructor, esto se hace para que se cree un nuevo contexto por cada vez que se llame a la clase
-        public ServicePublicacion(IUnitOfWork unitOfWork)
-        {
-            _unitOfWork = unitOfWork;
-        }
 
-       
         public async Task<IList<OfertaDTO>> GetAllPublicaciones()
         {
             try
@@ -54,7 +47,7 @@ namespace BussinessLogic.Services
             }
         }
 
-    
+
 
     }
 }

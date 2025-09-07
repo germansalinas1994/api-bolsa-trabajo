@@ -83,6 +83,7 @@ builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlSe
 
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<GenericService, GenericService>();
 builder.Services.AddScoped<ServicePublicacion>();
 
 

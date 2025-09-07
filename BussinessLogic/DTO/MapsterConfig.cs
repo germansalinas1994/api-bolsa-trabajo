@@ -26,8 +26,24 @@ namespace BussinessLogic.DTO
                 .Map(d => d.Modalidad, s => s.Modalidad.Nombre)
                 .Map(d => d.FechaInicio, s => s.FechaInicio.ToShortDateString())
                 .Map(d => d.FechaFin, s => s.FechaFin.HasValue ? s.FechaFin.Value.ToShortDateString() : "");
-                
-                
+
+
+            TypeAdapterConfig<TipoContrato, TipoContratoDTO>
+             .NewConfig()
+             .Map(d => d.Codigo, s => s.Codigo)
+             .Map(d => d.Descripcion, s => s.Nombre);
+
+            TypeAdapterConfig<Modalidad, ModalidadDTO>
+                .NewConfig()
+                .Map(d => d.Codigo, s => s.Codigo)
+                .Map(d => d.Descripcion, s => s.Nombre);
+
+            TypeAdapterConfig<Carrera, CarreraDTO>
+                .NewConfig()
+                .Map(d => d.Codigo, s => s.Codigo)
+                .Map(d => d.Descripcion, s => s.Nombre);
+
+
         }
     }
 }

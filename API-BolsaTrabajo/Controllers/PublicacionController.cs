@@ -15,14 +15,14 @@ namespace API_Client.Controllers
     public class PublicacionController : GenericController
     {
 
-        //Instancio el service que vamos a usar
-        private ServicePublicacion _service;
+       private readonly ServicePublicacion _service;
+
+    public PublicacionController(ServicePublicacion service) : base(service)
+    {
+        _service = service; // ahora sí lo seteás correctamente
+    }
 
         //Inyecto el service por el constructor
-        public PublicacionController(ServicePublicacion service)
-        {
-            _service = service;
-        }
 
         //Metodo para traer todas las categorias
         [HttpGet]
@@ -32,6 +32,7 @@ namespace API_Client.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        [Route("get_publicaciones_empleo")]
         public async Task<ApiResponse> GetAllPublicaciones()
         {
             try
