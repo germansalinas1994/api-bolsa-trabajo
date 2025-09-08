@@ -71,6 +71,41 @@ namespace BussinessLogic.Services
             catch (ApiException) { throw; }
             catch (Exception ex) { throw new ApiException(ex); }
         }
+        
+        public async Task<IList<OfertaDTO>> GetPorCarreraAsync(int idCarrera, CancellationToken ct = default)
+        {
+            try
+            {
+                // 1) Traigo las relaciones activas Oferta-Carrera para ese idCarrera
+                var relaciones = await _unitOfWork.GenericRepository<OfertaCarrera>()
+                    .GetByCriteria(oc => oc.IdCarrera == idCarrera && oc.FechaBaja == null);
 
+                var ofertaIds = relaciones
+                    .Select(oc => oc.IdOferta)
+                    .Distinct()
+                    .ToList();
+
+                if (ofertaIds.Count == 0)
+                    return new List<OfertaDTO>();
+
+                // 2) Traigo las ofertas activas por esos IDs + includes habituales
+                var ofertas = await _unitOfWork.GenericRepository<Oferta>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        o => o.FechaBaja == null && ofertaIds.Contains(o.Id),
+                        include: q => q
+                            .Include(o => o.PerfilEmpresa).ThenInclude(pe => pe.Usuario)
+                            .Include(o => o.Modalidad)
+                            .Include(o => o.TipoContrato)
+                            .Include(o => o.Localidad).ThenInclude(l => l.Provincia).ThenInclude(p => p.Pais)
+                    );
+
+                return ofertas
+                    .OrderByDescending(o => o.FechaAlta)
+                    .ToList()
+                    .Adapt<List<OfertaDTO>>();
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw new ApiException(ex); }
+        }
     }
 }
