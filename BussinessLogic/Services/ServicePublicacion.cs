@@ -47,7 +47,30 @@ namespace BussinessLogic.Services
             }
         }
 
+        public async Task<IList<OfertaDTO>> GetRecientes(int limit, CancellationToken ct = default)
+        {
+            try
+            {
+                var lista = await _unitOfWork.GenericRepository<Oferta>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        o => o.FechaBaja == null,
+                        include: q => q
+                            .Include(o => o.PerfilEmpresa).ThenInclude(pe => pe.Usuario)
+                            .Include(o => o.Modalidad)
+                            .Include(o => o.TipoContrato)
+                            .Include(o => o.Localidad).ThenInclude(l => l.Provincia).ThenInclude(p => p.Pais)
+                    );
 
+                var recientes = lista
+                    .OrderByDescending(o => o.FechaAlta)
+                    .Take(limit)
+                    .ToList();
+
+                return recientes.Adapt<List<OfertaDTO>>();
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw new ApiException(ex); }
+        }
 
     }
 }

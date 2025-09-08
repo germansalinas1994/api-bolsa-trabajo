@@ -58,7 +58,12 @@ namespace API_Client.Controllers
         }
 
     
-
+        [HttpGet("recientes")]
+        public async Task<ApiResponse> GetRecientes([FromQuery] int limit = 3, CancellationToken ct = default)
+        {
+            var list = await _service.GetRecientes(limit, ct);
+            return new ApiResponse(list);
+        }
 
        
 
