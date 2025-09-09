@@ -22,7 +22,24 @@ namespace API_Client.Controllers
         {
             _service = service; // ahora sí lo seteás correctamente
         }
-
+        [HttpGet]
+        [Route("get_postulaciones")]
+        public async Task<ApiResponse> GetPostulaciones()
+        {
+            try
+            {
+                List<PostulacionDTO> postulaciones = await _service.GetPostulaciones();
+                return new ApiResponse(postulaciones);
+            }
+            catch (ApiException e)
+            {
+                throw e;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex);
+            }
+        }
 
         [HttpPost]
         [Route("postularse_oferta")]
