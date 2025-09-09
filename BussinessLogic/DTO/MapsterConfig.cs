@@ -43,6 +43,19 @@ namespace BussinessLogic.DTO
                 .Map(d => d.Codigo, s => s.Codigo)
                 .Map(d => d.Descripcion, s => s.Nombre);
 
+            // Postulacion -> PostulacionDTO (incluye Oferta y Estado desde historial)
+            TypeAdapterConfig<Postulacion, PostulacionDTO>
+                .NewConfig()
+                .Map(d => d.IdPostulacion, s => s.Id)
+                .Map(d => d.IdOferta, s => s.IdOferta)
+                .Map(d => d.TituloOferta, s => s.Oferta != null ? s.Oferta.Titulo : string.Empty)
+                .Map(d => d.NombreEmpresa, s => s.Oferta != null && s.Oferta.PerfilEmpresa != null 
+                                                    ? s.Oferta.PerfilEmpresa.RazonSocial 
+                                                    ?? s.Oferta.PerfilEmpresa.Usuario.Nombre 
+                                                    : string.Empty)
+                .Map(d => d.FechaPostulacion, s => s.FechaAlta)
+                .Map(d => d.FechaPostulacionTexto, s => $"Postulado el {s.FechaAlta:dd MMM yyyy}");
+
 
         }
     }

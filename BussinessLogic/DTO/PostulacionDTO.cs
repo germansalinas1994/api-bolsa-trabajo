@@ -1,7 +1,9 @@
-// BussinessLogic/DTO/Postulaciones/ApplicationCardDto.cs
-namespace BussinessLogic.DTO.Postulaciones
+using System;
+using DataAccess.Entities;
+
+namespace BussinessLogic.DTO
 {
-    public sealed class ApplicationCardDto
+    public sealed class PostulacionDTO
     {
         public int IdPostulacion { get; set; }
         public int IdOferta { get; set; }
@@ -10,5 +12,7 @@ namespace BussinessLogic.DTO.Postulaciones
         public string Estado { get; set; } = null!;       // "En revisión", "Entrevista", "Rechazada"
         public DateTime FechaPostulacion { get; set; }
         public string FechaPostulacionTexto { get; set; } = null!; // "Postulado el 21 Ago 2025"
+        
+        public int idPostulacionHistorial { get; set; } // para actualizaciones rápidas desde el front
     }
 }
