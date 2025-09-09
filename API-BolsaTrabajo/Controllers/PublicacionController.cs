@@ -7,6 +7,7 @@ using BussinessLogic.Services;
 using Microsoft.AspNetCore.Mvc;
 using AutoWrapper.Wrappers;
 using DataAccess.Entities;
+using System.Net;
 
 
 namespace API_Client.Controllers
@@ -37,9 +38,8 @@ namespace API_Client.Controllers
         {
             try
             {
-                IList<OfertaDTO> pruebas = await _service.GetAllPublicaciones();
-                ApiResponse response = new ApiResponse(new { data = pruebas });
-                return response;
+                IList<OfertaDTO> ofertas = await _service.GetAllPublicaciones();
+                return  new ApiResponse("Operación exitosa", ofertas);
             }
             catch (ApiException)
             {

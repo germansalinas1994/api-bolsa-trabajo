@@ -6,6 +6,7 @@ using DataAccess.Entities;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using AutoWrapper.Wrappers;
+using System.Net;
 
 namespace BussinessLogic.Services
 {
@@ -34,6 +35,30 @@ namespace BussinessLogic.Services
 
 
                 return oferta.Adapt<List<OfertaDTO>>();
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+        }
+
+        public async Task<Oferta> GetPublicacionEntidadById(int id)
+        {
+            try
+            {
+                Oferta oferta = await _unitOfWork.GenericRepository<Oferta>().GetById(id);
+                if (oferta == null)
+                {
+                    throw new ApiException("No se encontró la publicación con el ID proporcionado.", (int)HttpStatusCode.NotFound);
+                }
+
+                return oferta;
             }
             catch (ApiException)
             {

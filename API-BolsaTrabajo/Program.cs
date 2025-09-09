@@ -18,6 +18,7 @@ using Microsoft.OpenApi.Models;
 using BussinessLogic.Services;
 using Microsoft.AspNetCore.Authorization;
 using DataAccess;
+using Microsoft.AspNetCore.Mvc;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -85,6 +86,7 @@ builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlSe
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<GenericService, GenericService>();
 builder.Services.AddScoped<ServicePublicacion>();
+builder.Services.AddScoped<ServicePostulante>();
 
 
 
@@ -98,6 +100,11 @@ builder.Services.AddCors(opciones =>
     });
 });
 
+//por si queremos desactivar el validador automatico de modelos
+// builder.Services.Configure<ApiBehaviorOptions>(options =>
+// {
+//     options.SuppressModelStateInvalidFilter = true;
+// });
 
 
 
