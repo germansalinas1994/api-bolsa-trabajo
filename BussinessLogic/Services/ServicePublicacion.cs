@@ -44,7 +44,7 @@ namespace BussinessLogic.Services
             catch (Exception ex)
             {
                 // Manejo de excepciones en caso de error
-                throw new ApiException(ex);
+                throw ex;
             }
         }
 
@@ -67,12 +67,50 @@ namespace BussinessLogic.Services
             }
             catch (Exception ex)
             {
-                // Manejo de excepciones en caso de error
-                throw new ApiException(ex);
+                throw ex;
             }
         }
 
+        public async Task<IList<OfertaDTO>> GetPublicaciones(SearchPublicacionesDTO filtro)
+        {
+            try
+            {
+                var search = (await _unitOfWork.GenericRepository<Oferta>().Search()).Where(o => o.FechaBaja == null);
+                if (filtro.Input != null)
+                {
+                    search = search.Where(o => o.Titulo.Contains(filtro.Input) || o.Descripcion.Contains(filtro.Input));
+                }
+                if (filtro.Modalidades != null && filtro.Modalidades.Count > 0)
+                {
+                    IList<int> idsModalidades = (await _unitOfWork.GenericRepository<Modalidad>().GetByCriteria(m => filtro.Modalidades.Contains(m.Codigo))).Select(m => m.Id).ToList();
+                    search = search.Where(o => idsModalidades.Contains(o.IdModalidad));
+                }
+                if (filtro.TiposContrato != null && filtro.TiposContrato.Count > 0)
+                {
+                    IList<int> idsTiposContrato = (await _unitOfWork.GenericRepository<TipoContrato>().GetByCriteria(m => filtro.TiposContrato.Contains(m.Codigo))).Select(m => m.Id).ToList();
+                    search = search.Where(o => idsTiposContrato.Contains(o.IdTipoContrato));
+                }
 
+                List<Oferta> oferta = search
+                    .Include(pe => pe.PerfilEmpresa)
+                        .ThenInclude(u => u.Usuario)
+                    .Include(m => m.Modalidad)
+                    .Include(tc => tc.TipoContrato)
+                    .Include(l => l.Localidad)
+                        .ThenInclude(p => p.Provincia)
+                            .ThenInclude(p => p.Pais)
+                    .ToList();
 
+                return oferta.Adapt<List<OfertaDTO>>();
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }

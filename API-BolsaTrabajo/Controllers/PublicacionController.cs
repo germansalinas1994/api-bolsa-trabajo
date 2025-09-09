@@ -26,7 +26,7 @@ namespace API_Client.Controllers
         //Inyecto el service por el constructor
 
         //Metodo para traer todas las categorias
-        [HttpGet]
+        [HttpPost]
         [ProducesResponseType(typeof(OfertaDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
@@ -34,11 +34,12 @@ namespace API_Client.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
         [Route("get_publicaciones_empleo")]
-        public async Task<ApiResponse> GetAllPublicaciones()
+        public async Task<ApiResponse> GetPublicaciones([FromBody] SearchPublicacionesDTO filtro)
         {
             try
             {
-                IList<OfertaDTO> ofertas = await _service.GetAllPublicaciones();
+                // IList<OfertaDTO> ofertas = await _service.GetAllPublicaciones();
+                IList<OfertaDTO> ofertas = await _service.GetPublicaciones(filtro);
                 return  new ApiResponse("Operación exitosa", ofertas);
             }
             catch (ApiException)
