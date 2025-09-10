@@ -13,12 +13,12 @@ using System.Net;
 namespace API_Client.Controllers
 {
     [Route("api/[controller]")]
-    public class PostulanteController : GenericController
+    public class PostulacionController : GenericController
     {
 
-        private readonly ServicePostulante _service;
+        private readonly ServicePostulacion _service;
 
-        public PostulanteController(ServicePostulante service) : base(service)
+        public PostulacionController(ServicePostulacion service) : base(service)
         {
             _service = service; // ahora sí lo seteás correctamente
         }

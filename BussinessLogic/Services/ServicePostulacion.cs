@@ -10,11 +10,11 @@ using System.Net;
 
 namespace BussinessLogic.Services
 {
-    public class ServicePostulante : GenericService
+    public class ServicePostulacion : GenericService
     {
         private readonly ServicePublicacion _servicePublicacion;
 
-        public ServicePostulante(IUnitOfWork unitOfWork, ServicePublicacion servicePublicacion)
+        public ServicePostulacion(IUnitOfWork unitOfWork, ServicePublicacion servicePublicacion)
             : base(unitOfWork)
         {
             _servicePublicacion = servicePublicacion;
