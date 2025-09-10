@@ -61,8 +61,8 @@ namespace API_Client.Controllers
             try
             {
                 IList<TipoContratoDTO> tiposContratos = await _service.GetAllTiposContratos();
-                ApiResponse response = new ApiResponse(new { data = tiposContratos });
-                return response;
+                
+                return new ApiResponse("Operación exitosa", tiposContratos);
             }
             catch (ApiException)
             {
@@ -93,8 +93,7 @@ namespace API_Client.Controllers
             try
             {
                 IList<CarreraDTO> carreras = await _service.GetAllCarreras();
-                ApiResponse response = new ApiResponse(new { data = carreras });
-                return response;
+                return new ApiResponse("Operación exitosa", carreras);
             }
             catch (ApiException)
             {
@@ -124,8 +123,7 @@ namespace API_Client.Controllers
             try
             {
                 IList<ModalidadDTO> modalidades = await _service.GetAllModalidades();
-                ApiResponse response = new ApiResponse(new { data = modalidades });
-                return response;
+                return new ApiResponse("Operación exitosa", modalidades);
             }
             catch (ApiException)
             {

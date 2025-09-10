@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DataAccess.Entities;
 
-public partial class Postulacion 
+public partial class Postulacion
 {
     public int Id { get; set; }
 
@@ -25,4 +25,7 @@ public partial class Postulacion
     public virtual Oferta Oferta { get; set; } = null!;
 
     public virtual PerfilCandidato PerfilCandidato { get; set; } = null!;
+
+    public virtual ICollection<PostulacionHistorial>? Historial { get; set; }
+
 }

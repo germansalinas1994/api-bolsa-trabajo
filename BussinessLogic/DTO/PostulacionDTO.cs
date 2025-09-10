@@ -1,18 +1,29 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using DataAccess.Entities;
 
 namespace BussinessLogic.DTO
 {
-    public sealed class PostulacionDTO
+    public class PostulacionDTO
     {
-        public int IdPostulacion { get; set; }
-        public int IdOferta { get; set; }
-        public string TituloOferta { get; set; } = null!;
-        public string NombreEmpresa { get; set; } = null!;
-        public string Estado { get; set; } = null!;       // "En revisión", "Entrevista", "Rechazada"
-        public DateTime FechaPostulacion { get; set; }
-        public string FechaPostulacionTexto { get; set; } = null!; // "Postulado el 21 Ago 2025"
-        
-        public int idPostulacionHistorial { get; set; } // para actualizaciones rápidas desde el front
+        public int? Id { get; set; }
+
+        public int? IdPerfilCandidato { get; set; }
+        public int? IdOferta { get; set; }
+        public string? CartaPresentacion { get; set; }
+        public string? Observacion { get; set; }
+
+        public string? EstadoPostulacion { get; set; }
+        public string? FechaPostulacion { get; set; }
+
+        public string? NombreEmpresa { get; set; }
+        public string? TituloOferta { get; set; }
+
+        public string? DescripcionOferta { get; set; }
+        public string? DescripcionModalidad { get; set; }
+        public string? DescripcionTipoContrato { get; set; }
+
     }
+
 }
+

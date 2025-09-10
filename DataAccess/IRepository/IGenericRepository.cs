@@ -31,7 +31,7 @@ namespace DataAccess.IRepository
         Task<IList<T>> GetByCriteriaIncludingRelations(Expression<Func<T, bool>> predicate);
         Task<IList<T>> GetByCriteriaIncludingSpecificRelations(Expression<Func<T, bool>> predicate, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
         Task<IList<T>> GetAllIncludingAllRelations(int maxDepth = 5, bool asNoTracking = true);
-        IQueryable<T> Search();
+        Task<IQueryable<T>> Search();
 
         Task<T?> GetByIdIncludingSpecificRelations(
     object id,

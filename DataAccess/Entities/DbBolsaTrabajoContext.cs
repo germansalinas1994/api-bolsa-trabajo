@@ -171,7 +171,7 @@ public partial class DbBolsaTrabajoContext : DbContext
                .HasForeignKey(x => x.IdEstadoPostulacion);
 
                e.HasOne(x => x.Postulacion)
-               .WithMany()
+               .WithMany(p => p.Historial)
                .HasForeignKey(x => x.IdPostulacion);
            });
 

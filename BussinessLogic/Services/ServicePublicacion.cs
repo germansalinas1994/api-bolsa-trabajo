@@ -6,6 +6,7 @@ using DataAccess.Entities;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using AutoWrapper.Wrappers;
+using System.Net;
 
 namespace BussinessLogic.Services
 {
@@ -43,69 +44,73 @@ namespace BussinessLogic.Services
             catch (Exception ex)
             {
                 // Manejo de excepciones en caso de error
-                throw new ApiException(ex);
+                throw ex;
             }
         }
 
-        public async Task<IList<OfertaDTO>> GetRecientes(int limit, CancellationToken ct = default)
+        public async Task<Oferta> GetPublicacionEntidadById(int id)
         {
             try
             {
-                var lista = await _unitOfWork.GenericRepository<Oferta>()
-                    .GetByCriteriaIncludingSpecificRelations(
-                        o => o.FechaBaja == null,
-                        include: q => q
-                            .Include(o => o.PerfilEmpresa).ThenInclude(pe => pe.Usuario)
-                            .Include(o => o.Modalidad)
-                            .Include(o => o.TipoContrato)
-                            .Include(o => o.Localidad).ThenInclude(l => l.Provincia).ThenInclude(p => p.Pais)
-                    );
+                Oferta oferta = await _unitOfWork.GenericRepository<Oferta>().GetById(id);
+                if (oferta == null)
+                {
+                    throw new ApiException("No se encontró la publicación con el ID proporcionado.", (int)HttpStatusCode.NotFound);
+                }
 
-                var recientes = lista
-                    .OrderByDescending(o => o.FechaAlta)
-                    .Take(limit)
-                    .ToList();
-
-                return recientes.Adapt<List<OfertaDTO>>();
+                return oferta;
             }
-            catch (ApiException) { throw; }
-            catch (Exception ex) { throw new ApiException(ex); }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
-        
-        public async Task<IList<OfertaDTO>> GetPorCarreraAsync(int idCarrera, CancellationToken ct = default)
+
+        public async Task<IList<OfertaDTO>> GetPublicaciones(SearchPublicacionesDTO filtro)
         {
             try
             {
-                // 1) Traigo las relaciones activas Oferta-Carrera para ese idCarrera
-                var relaciones = await _unitOfWork.GenericRepository<OfertaCarrera>()
-                    .GetByCriteria(oc => oc.IdCarrera == idCarrera && oc.FechaBaja == null);
+                var search = (await _unitOfWork.GenericRepository<Oferta>().Search()).Where(o => o.FechaBaja == null);
+                if (filtro.Input != null)
+                {
+                    search = search.Where(o => o.Titulo.Contains(filtro.Input) || o.Descripcion.Contains(filtro.Input));
+                }
+                if (filtro.Modalidades != null && filtro.Modalidades.Count > 0)
+                {
+                    IList<int> idsModalidades = (await _unitOfWork.GenericRepository<Modalidad>().GetByCriteria(m => filtro.Modalidades.Contains(m.Codigo))).Select(m => m.Id).ToList();
+                    search = search.Where(o => idsModalidades.Contains(o.IdModalidad));
+                }
+                if (filtro.TiposContrato != null && filtro.TiposContrato.Count > 0)
+                {
+                    IList<int> idsTiposContrato = (await _unitOfWork.GenericRepository<TipoContrato>().GetByCriteria(m => filtro.TiposContrato.Contains(m.Codigo))).Select(m => m.Id).ToList();
+                    search = search.Where(o => idsTiposContrato.Contains(o.IdTipoContrato));
+                }
 
-                var ofertaIds = relaciones
-                    .Select(oc => oc.IdOferta)
-                    .Distinct()
+                List<Oferta> oferta = search
+                    .Include(pe => pe.PerfilEmpresa)
+                        .ThenInclude(u => u.Usuario)
+                    .Include(m => m.Modalidad)
+                    .Include(tc => tc.TipoContrato)
+                    .Include(l => l.Localidad)
+                        .ThenInclude(p => p.Provincia)
+                            .ThenInclude(p => p.Pais)
                     .ToList();
 
-                if (ofertaIds.Count == 0)
-                    return new List<OfertaDTO>();
-
-                // 2) Traigo las ofertas activas por esos IDs + includes habituales
-                var ofertas = await _unitOfWork.GenericRepository<Oferta>()
-                    .GetByCriteriaIncludingSpecificRelations(
-                        o => o.FechaBaja == null && ofertaIds.Contains(o.Id),
-                        include: q => q
-                            .Include(o => o.PerfilEmpresa).ThenInclude(pe => pe.Usuario)
-                            .Include(o => o.Modalidad)
-                            .Include(o => o.TipoContrato)
-                            .Include(o => o.Localidad).ThenInclude(l => l.Provincia).ThenInclude(p => p.Pais)
-                    );
-
-                return ofertas
-                    .OrderByDescending(o => o.FechaAlta)
-                    .ToList()
-                    .Adapt<List<OfertaDTO>>();
+                return oferta.Adapt<List<OfertaDTO>>();
             }
-            catch (ApiException) { throw; }
-            catch (Exception ex) { throw new ApiException(ex); }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
     }
 }
