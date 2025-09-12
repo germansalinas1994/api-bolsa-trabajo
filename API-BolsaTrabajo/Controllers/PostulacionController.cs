@@ -62,12 +62,28 @@ namespace API_Client.Controllers
             }
             catch (Exception ex)
             {
-                throw new ApiException(ex);
+                throw ex;
             }
-
-
+        }
+        [HttpGet]
+        [Route("get_postulacion")]
+        public async Task<ApiResponse> GetPostulacionById([FromQuery]int idPostulacion) {
+            try
+            {
+                if (idPostulacion == 0) 
+                    throw new ApiException("Debes indicar el ID de la postulación", (int)HttpStatusCode.BadRequest);
+                PostulacionDTO _postulacion = await _service.GetPostulacionById(idPostulacion);
+                return new ApiResponse("Postulación encontrada exitosamente", _postulacion);
+            }
+            catch (ApiException e)
+            {
+                throw e;
+            }
+            catch (Exception ex){
+                throw ex;
+            } 
+        }
 
         }
     }
-}
 

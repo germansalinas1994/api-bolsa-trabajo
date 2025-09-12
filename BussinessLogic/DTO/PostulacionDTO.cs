@@ -22,6 +22,10 @@ namespace BussinessLogic.DTO
         public string? DescripcionOferta { get; set; }
         public string? DescripcionModalidad { get; set; }
         public string? DescripcionTipoContrato { get; set; }
+        public string? DescripcionLocalidad { get; set; }
+        public string? DescripcionProvincia { get; set; }
+        public string? DescripcionPais { get; set; }
+
 
     }
 
