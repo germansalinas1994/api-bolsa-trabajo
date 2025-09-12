@@ -25,7 +25,7 @@ namespace BussinessLogic.Services
 
             try
             {
-                await _unitOfWork.BeginTransactionAsync();
+                await _unitOfWork.BeginTransactionAsync(); //transaccion en bd para rollback
 
                 //busco que no exista una postulacion igual para la misma oferta y candidato
                 var postulacionExistente = (await _unitOfWork.GenericRepository<Postulacion>()
@@ -52,7 +52,6 @@ namespace BussinessLogic.Services
                 Postulacion postulacionPersistida = await _unitOfWork.GenericRepository<Postulacion>().Insert(nuevaPostulacion);
 
                 //produzco un error aproposito para verificar que funcione la transaccion
-
 
                 PostulacionHistorial historial = new();
                 historial.IdPostulacion = postulacionPersistida.Id;
@@ -93,7 +92,8 @@ namespace BussinessLogic.Services
         }
 
         public async Task<List<PostulacionDTO>> GetPostulaciones()
-        {try
+        {
+            try
             {
                 List<Postulacion> postulaciones = (await _unitOfWork
                     .GenericRepository<Postulacion>()
@@ -126,5 +126,40 @@ namespace BussinessLogic.Services
                 throw ex;
             }
         }
+        public async Task<IList<PostulacionDTO>> GetPostulacionesPorEstado(int idPerfilCandidato, int idEstado)
+        {
+            try
+            {
+                var query = (await _unitOfWork.GenericRepository<Postulacion>().Search())
+                    .AsNoTracking()
+                    .Where(p => p.IdPerfilCandidato == idPerfilCandidato)
+                    .Where(p =>
+                        p.Historial
+                        .OrderByDescending(h => h.FechaModificacion)
+                        .Select(h => h.IdEstadoPostulacion)
+                        .FirstOrDefault() == idEstado
+                    );
+
+                var postulaciones = await query
+                    .Include(p => p.Oferta).ThenInclude(o => o.PerfilEmpresa).ThenInclude(pe => pe.Usuario)
+                    .Include(p => p.Oferta).ThenInclude(o => o.Modalidad)
+                    .Include(p => p.Oferta).ThenInclude(o => o.TipoContrato)
+                    .Include(p => p.PerfilCandidato)
+                    .Include(p => p.Historial.OrderByDescending(h => h.FechaModificacion).Take(1))
+                        .ThenInclude(h => h.EstadoPostulacion)
+                    .ToListAsync();
+
+                return postulaciones.Adapt<List<PostulacionDTO>>();
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch
+            {
+                throw; // conserva el stack trace
+            }
+        }
+
     }
 }

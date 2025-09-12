@@ -64,9 +64,34 @@ namespace API_Client.Controllers
             {
                 throw new ApiException(ex);
             }
+        }
 
+        [HttpGet]
+        [Route("get_postulaciones_por_estado/{idPerfilCandidato}")]
+        public async Task<ApiResponse> GetPostulacionesPorEstado(
+            [FromRoute] int idPerfilCandidato,
+            [FromQuery] int idEstado,
+            CancellationToken ct = default)
+        {
+            try
+            {
+                // Validación básica
+                if (idEstado <= 0)
+                    throw new ApiException("Debe indicar un idEstado válido (> 0).");
 
+                IList<PostulacionDTO> postulaciones =
+                    await _service.GetPostulacionesPorEstado(idPerfilCandidato, idEstado);
 
+                return new ApiResponse(postulaciones);
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex);
+            }
         }
     }
 }
