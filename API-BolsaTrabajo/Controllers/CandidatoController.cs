@@ -20,11 +20,28 @@ public class CandidatoController : GenericController
 
     [HttpGet]
     [Route("get_perfil")]
-    public async Task<ApiResponse> GetPerfil([FromQuery] int usuarioId = 4) // Por ahora hardcodeado, luego obtener del token
+    public async Task<ApiResponse> GetPerfil([FromQuery] int? perfilId = null, [FromQuery] int? usuarioId = null)
     {
         try
         {
-            var perfil = await _serviceCandidato.GetPerfilByUsuarioId(usuarioId);
+            PerfilCandidatoDTO perfil;
+            
+            if (perfilId.HasValue)
+            {
+                // Buscar por ID de perfil
+                perfil = await _serviceCandidato.GetPerfilById(perfilId.Value);
+            }
+            else if (usuarioId.HasValue)
+            {
+                // Buscar por ID de usuario
+                perfil = await _serviceCandidato.GetPerfilByUsuarioId(usuarioId.Value);
+            }
+            else
+            {
+                // Por defecto usar perfilId = 2 (según los datos que tienes)
+                perfil = await _serviceCandidato.GetPerfilById(2);
+            }
+            
             return new ApiResponse(perfil);
         }
         catch (ApiException e)
@@ -63,7 +80,7 @@ public class CandidatoController : GenericController
 
     [HttpPost]
     [Route("upload_cv")]
-    public async Task<ApiResponse> UploadCv([FromForm] IFormFile cv, [FromQuery] int usuarioId = 1)
+    public async Task<ApiResponse> UploadCv([FromForm] IFormFile cv, [FromQuery] int perfilId = 2)
     {
         try
         {
@@ -88,7 +105,7 @@ public class CandidatoController : GenericController
             }
 
             // Obtener el perfil actual
-            var perfilActual = await _serviceCandidato.GetPerfilByUsuarioId(usuarioId);
+            var perfilActual = await _serviceCandidato.GetPerfilById(perfilId);
             
             // Actualizar solo el CV
             perfilActual.Cv = Convert.ToBase64String(cvBytes);
