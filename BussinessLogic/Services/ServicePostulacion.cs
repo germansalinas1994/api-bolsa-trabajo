@@ -126,5 +126,31 @@ namespace BussinessLogic.Services
                 throw ex;
             }
         }
+
+        public async Task<PostulacionDTO> GetPostulacionById(int idPostulacion)
+        {try
+            {
+                Postulacion _postulacion = await _unitOfWork.GenericRepository<Postulacion>().GetByIdIncludingSpecificRelations(idPostulacion,
+                q => q.Include(h => h.Historial).ThenInclude (ep => ep.EstadoPostulacion)
+                .Include(o => o.Oferta).ThenInclude (pf => pf.PerfilEmpresa)
+                .Include(o => o.Oferta).ThenInclude (m => m.Modalidad)
+                .Include(o => o.Oferta).ThenInclude(tc => tc.TipoContrato)
+                .Include(o => o.Oferta).ThenInclude(l => l.Localidad).ThenInclude(p => p.Provincia).ThenInclude(pa => pa.Pais)
+                .Include(pc => pc.PerfilCandidato)
+                 );
+/*                 Postulacion _postulacion = await _unitOfWork.GenericRepository<Postulacion>().GetById(idPostulacion); 
+ */                if (_postulacion == null) 
+                    throw new ApiException("No existe la postulación", (int) HttpStatusCode.NotFound);
+                return _postulacion.Adapt<PostulacionDTO>();
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
     }
 }
