@@ -112,5 +112,24 @@ namespace BussinessLogic.Services
                 throw ex;
             }
         }
+
+
+        public async Task<IList<OfertaDTO>> GetRecientes(int limit)
+        {
+            try
+            {
+                List<Oferta> o = (await _unitOfWork.GenericRepository<Oferta>()//aca digo que voy a la tabla oferta
+                .GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(p => p.Provincia)
+                .Include(tc => tc.TipoContrato)
+                .Include(m=>m.Modalidad)
+                .Include(e=>e.PerfilEmpresa)
+
+            )).Where(f=>f.FechaBaja == null).OrderByDescending(f=>f.FechaAlta).ToList();
+                // int cantidad = o.Count;
+                return o.Adapt<List<OfertaDTO>>(); //mapeo a DTO y retorno
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw ex; }
+        }
     }
 }
