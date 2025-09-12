@@ -58,26 +58,32 @@ namespace API_Client.Controllers
 
         }
 
-    
-        [HttpGet("recientes")]
-        public async Task<ApiResponse> GetRecientes([FromQuery] int limit = 3, CancellationToken ct = default)
+
+        [HttpGet("get_publicaciones_recientes")]
+        public async Task<ApiResponse> GetPublicacionesRecientes([FromQuery] int limit = 3)
         {
-            var list = await _service.GetRecientes(limit, ct);
-            return new ApiResponse(list);
+            try
+            { //aca puedo agregar validaciones, por ejemplo que el limit no sea negativo o cero
+                if (limit <= 0) throw new ApiException("El parámetro 'limit' debe ser mayor a 0.", (int)HttpStatusCode.BadRequest); // con esto me devuelve un 400
+                IList<OfertaDTO> ofertas = await _service.GetRecientes(limit);
+                return new ApiResponse("Ofertas encontradas", ofertas);
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw ex; }
         }
 
-       [HttpGet("por-carrera/{idCarrera}")]
-         public async Task<IActionResult> GetPorCarrera([FromRoute] int idCarrera, CancellationToken ct = default)
-        {
-                try
-                {
-                    if (idCarrera <= 0) return BadRequest(new ApiResponse("El parámetro 'idCarrera' debe ser mayor a 0."));
-                    IList<OfertaDTO> data = await _service.GetPorCarreraAsync(idCarrera, ct);
-                    return Ok(data);
-                }
-                catch (ApiException) { throw; }
-                catch (System.Exception ex) { throw new ApiException(ex); }
-        }
+    //    [HttpGet("get_publicaciones_por-carrera/{idCarrera}")]
+    //      public async Task<IActionResult> GetPorCarrera([FromRoute] int idCarrera, CancellationToken ct = default)
+    //     {
+    //             try
+    //             {
+    //                 if (idCarrera <= 0) return BadRequest(new ApiResponse("El parámetro 'idCarrera' debe ser mayor a 0."));
+    //                 IList<OfertaDTO> data = await _service.GetPorCarreraAsync(idCarrera, ct);
+    //                 return Ok(data);
+    //             }
+    //             catch (ApiException) { throw; }
+    //             catch (System.Exception ex) { throw new ApiException(ex); }
+    //     }
 
     }
 }
