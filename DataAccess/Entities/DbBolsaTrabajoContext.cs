@@ -138,6 +138,10 @@ public partial class DbBolsaTrabajoContext : DbContext
            e.HasOne(x => x.Usuario)
            .WithMany()
            .HasForeignKey(x => x.IdUsuario);
+
+           e.HasOne(x => x.Carrera)
+           .WithMany()
+           .HasForeignKey(x => x.IdCarrera);
        });
 
         modelBuilder.Entity<PerfilEmpresa>(e =>

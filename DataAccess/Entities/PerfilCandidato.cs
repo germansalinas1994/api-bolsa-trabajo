@@ -12,6 +12,7 @@ public partial class PerfilCandidato
     public int IdUsuario { get; set; }
 
     public int? IdGenero { get; set; }
+    public int? IdCarrera { get; set; }
 
     public string? Legajo { get; set; }
 
@@ -29,4 +30,5 @@ public partial class PerfilCandidato
     public virtual Genero? Genero { get; set; }
 
     public virtual Usuario Usuario { get; set; } = null!;
+    public virtual Carrera? Carrera { get; set; } = null!;
 }

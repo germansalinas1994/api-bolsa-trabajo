@@ -87,6 +87,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<GenericService, GenericService>();
 builder.Services.AddScoped<ServicePublicacion>();
 builder.Services.AddScoped<ServicePostulacion>();
+builder.Services.AddScoped<ServiceCandidato>();
 
 
 
