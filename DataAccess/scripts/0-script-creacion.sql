@@ -111,6 +111,7 @@ CREATE TABLE dbo.PerfilCandidato (
   id INT IDENTITY(1,1) PRIMARY KEY,
   idUsuario INT NOT NULL,
   idGenero INT NULL,
+  idCarrera INT NULL,
   legajo NVARCHAR(45) NULL,
   anioEgreso INT NULL,
   cv VARBINARY(MAX) NULL,
@@ -240,6 +241,8 @@ ALTER TABLE dbo.PerfilCandidato      ADD CONSTRAINT FK_PerfilCandidato_Usuario
   FOREIGN KEY (idUsuario)         REFERENCES dbo.Usuario(id);
 ALTER TABLE dbo.PerfilCandidato      ADD CONSTRAINT FK_PerfilCandidato_Genero
   FOREIGN KEY (idGenero)          REFERENCES dbo.Genero(id);
+ALTER TABLE dbo.PerfilCandidato      ADD CONSTRAINT FK_PerfilCandidato_Carrera
+  FOREIGN KEY (idCarrera)          REFERENCES dbo.Carrera(id);
 
 ALTER TABLE dbo.Oferta               ADD CONSTRAINT FK_Oferta_PerfilEmpresa
   FOREIGN KEY (idPerfilEmpresa)   REFERENCES dbo.PerfilEmpresa(id);
