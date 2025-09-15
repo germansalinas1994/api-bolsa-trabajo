@@ -89,11 +89,24 @@ public class CandidatoController : GenericController
                 throw new ApiException("Archivo CV requerido", (int)HttpStatusCode.BadRequest);
             }
 
-            // Validar tipo de archivo (opcional)
-            var allowedTypes = new[] { "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
-            if (!allowedTypes.Contains(cv.ContentType))
+            // Validar tipo de archivo - solo PDF
+            if (cv.ContentType != "application/pdf")
             {
-                throw new ApiException("Tipo de archivo no válido. Solo se permiten PDF, DOC y DOCX", (int)HttpStatusCode.BadRequest);
+                throw new ApiException("Tipo de archivo no válido. Solo se permiten archivos PDF", (int)HttpStatusCode.BadRequest);
+            }
+
+            // Validar extensión del archivo
+            var fileExtension = Path.GetExtension(cv.FileName).ToLowerInvariant();
+            if (fileExtension != ".pdf")
+            {
+                throw new ApiException("Extensión de archivo no válida. Solo se permiten archivos .pdf", (int)HttpStatusCode.BadRequest);
+            }
+
+            // Validar tamaño del archivo (máximo 5MB)
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            if (cv.Length > maxFileSize)
+            {
+                throw new ApiException("El archivo es demasiado grande. El tamaño máximo permitido es 5MB", (int)HttpStatusCode.BadRequest);
             }
 
             // Convertir archivo a byte array
