@@ -114,19 +114,22 @@ namespace BussinessLogic.Services
         }
 
 
-        public async Task<IList<OfertaDTO>> GetRecientes(int limit)
+        public async Task<OfertaRecienteDTO> GetRecientes(int limit)
         {
+            OfertaRecienteDTO ofertaReciente = new OfertaRecienteDTO();
             try
             {
                 List<Oferta> o = (await _unitOfWork.GenericRepository<Oferta>()//aca digo que voy a la tabla oferta
                 .GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(p => p.Provincia)
                 .Include(tc => tc.TipoContrato)
-                .Include(m=>m.Modalidad)
-                .Include(e=>e.PerfilEmpresa)
+                .Include(m => m.Modalidad)
+                .Include(e => e.PerfilEmpresa)
 
-            )).Where(f=>f.FechaBaja == null).OrderByDescending(f=>f.FechaAlta).ToList();
+            )).Where(f => f.FechaBaja == null).OrderByDescending(f => f.FechaAlta).ToList();
                 // int cantidad = o.Count;
-                return o.Adapt<List<OfertaDTO>>(); //mapeo a DTO y retorno
+                ofertaReciente.Ofertas = o.Adapt<List<OfertaDTO>>().ToList(); //mapeo a DTO y tomo los primeros 'limit' elementos
+                ofertaReciente.CantidadOfertas = o.Count;
+                return ofertaReciente; //mapeo a DTO y retorno
             }
             catch (ApiException) { throw; }
             catch (Exception ex) { throw ex; }
