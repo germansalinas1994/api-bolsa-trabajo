@@ -44,10 +44,9 @@ namespace BussinessLogic.DTO
             TypeAdapterConfig<Postulacion, PostulacionDTO>
                 .NewConfig()
                 .Map(d => d.EstadoPostulacion,
-                    s => s.Historial
-                            .OrderByDescending(h => h.FechaModificacion)
+                    s => s.Historial != null ? s.Historial .OrderByDescending(h => h.FechaModificacion)
                             .Select(h => h.EstadoPostulacion.Nombre)
-                            .FirstOrDefault())
+                            .FirstOrDefault() : string.Empty)
 
                 .Map(d => d.FechaPostulacion, s => s.FechaAlta.ToString("dd/MM/yyyy"))
 
@@ -56,7 +55,10 @@ namespace BussinessLogic.DTO
                 .Map(d => d.TituloOferta, s => s.Oferta.Titulo)
                 .Map(d => d.DescripcionOferta, s => s.Oferta.Descripcion)
                 .Map(d => d.DescripcionModalidad, s => s.Oferta.Modalidad.Nombre)
-                .Map(d => d.DescripcionTipoContrato, s => s.Oferta.TipoContrato.Nombre);
+                .Map(d => d.DescripcionTipoContrato, s => s.Oferta.TipoContrato.Nombre)
+                .Map(d => d.DescripcionLocalidad, s => s.Oferta.Localidad.Nombre)
+                .Map(d => d.DescripcionProvincia, s => s.Oferta.Localidad.Provincia.Nombre)
+                .Map(d => d.DescripcionPais, s => s.Oferta.Localidad.Provincia.Pais.Nombre);
 
         }
     }
