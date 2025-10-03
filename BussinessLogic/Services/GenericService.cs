@@ -31,6 +31,7 @@ namespace BussinessLogic.Services
                 //busco que no exista una postulacion igual para la misma oferta y candidato
                 var usuarioExistente = (await _unitOfWork.GenericRepository<Usuario>()
                     .GetByCriteria(u => u.Email == email && u.FechaBaja == null && u.Activo == true)).FirstOrDefault();
+
                 if (usuarioExistente != null)
                     return usuarioExistente.Adapt<UsuarioDTO>();
 
@@ -39,16 +40,17 @@ namespace BussinessLogic.Services
                 nuevoUsuario.Email = email;
                 //el rol que va a tener es en base al dominio del email
                 string dominio = email.Split('@')[1].ToLower();
-                if (dominio == "frlp.utn.edu.ar")
+                if (dominio == Usuario.DominioAdmin)
                     nuevoUsuario.IdRol = Rol.IdRolAdmin;
-                else if (dominio == "alu.frlp.utn.edu.ar")
+
+                else if (dominio == Usuario.DominioCandidato)
                     nuevoUsuario.IdRol = Rol.IdRolCandidato;
                 else
                     nuevoUsuario.IdRol = Rol.IdRolEmpresa;
 
                 nuevoUsuario.FechaAlta = DateTime.Now;
                 nuevoUsuario.FechaModificacion = DateTime.Now;
-                nuevoUsuario.Nombre = email.Split('@')[0];
+                // nuevoUsuario.Nombre = email.Split('@')[0];
                 nuevoUsuario.Activo = true;
 
                 nuevoUsuario = await _unitOfWork.GenericRepository<Usuario>().Insert(nuevoUsuario);
@@ -70,6 +72,8 @@ namespace BussinessLogic.Services
                 {
                     PerfilEmpresa nuevaEmpresa = new();
                     nuevaEmpresa.IdUsuario = nuevoUsuario.Id;
+                    //por defecto va en estado iniciada hasta que un admin lo habilite
+                    nuevaEmpresa.IdEstadoValidacion = EstadoValidacion.IdEstadoIniciada;
                     nuevaEmpresa.FechaAlta = DateTime.Now;
                     nuevaEmpresa.FechaModificacion = DateTime.Now;
                     nuevaEmpresa = await _unitOfWork.GenericRepository<PerfilEmpresa>().Insert(nuevaEmpresa);

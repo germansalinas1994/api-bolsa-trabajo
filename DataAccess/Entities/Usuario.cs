@@ -5,9 +5,12 @@ namespace DataAccess.Entities;
 
 public partial class Usuario
 {
+    public static string DominioAdmin = "frlp.utn.edu.ar";
+    public static string DominioCandidato = "alu.frlp.utn.edu.ar";
+
     public int Id { get; set; }
 
-    public string Nombre { get; set; } = null!;
+    public string? Nombre { get; set; }
 
     public string Email { get; set; } = null!;
 
