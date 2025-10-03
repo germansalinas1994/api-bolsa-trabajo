@@ -27,8 +27,13 @@ namespace API_Client.Controllers
                 var config = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
 
                 var nameSpace = config["Auth0:Namespace"];
+                //puedo leer el token
+                var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadJwtToken(token);
+
                 // Buscar primero en claims del usuario validado por el middleware
-                var email = User.FindFirst(nameSpace + "email")?.Value;
+                var email = jwtToken.Claims.FirstOrDefault(c => c.Type == nameSpace + "email")?.Value;
 
                 if (string.IsNullOrEmpty(email))
                 {
@@ -146,6 +151,30 @@ namespace API_Client.Controllers
                 // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
 
                 throw new ApiException(ex);
+            }
+        }
+
+        [HttpPost]
+        [Route("cargar_usuario")]
+        public async Task<ApiResponse> CargarUsuario()
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                UsuarioDTO usuario = await _service.CargarUsuarioDesdeJWT(email);
+                return new ApiResponse("Operación exitosa", usuario);
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
             }
         }
     }
