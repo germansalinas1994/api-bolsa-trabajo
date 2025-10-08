@@ -11,7 +11,7 @@ public partial class PerfilEmpresa
 
     public string? Descripcion { get; set; }
 
-    public string RazonSocial { get; set; } = null!;
+    public string? RazonSocial { get; set; }
 
     public string? Cuit { get; set; }
 

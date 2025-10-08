@@ -110,6 +110,25 @@ builder.Services.AddCors(opciones =>
 
 //esto hacemos en caso de que queramos agregar autenticacion con auth0 para verificar el token y captarlo por headers de la peticion
 
+var domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = domain; // dominio Auth0
+        options.Audience = builder.Configuration["Auth0:Audience"]; 
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            NameClaimType = ClaimTypes.NameIdentifier
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 // var domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
 
 // builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

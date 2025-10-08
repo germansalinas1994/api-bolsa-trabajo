@@ -3,11 +3,13 @@ using System.Net;
 using AutoWrapper.Wrappers;
 using BussinessLogic.DTO;
 using BussinessLogic.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API_Client.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class GenericController : Controller
     { //Instancio el service que vamos a usar
@@ -22,14 +24,24 @@ namespace API_Client.Controllers
         {
             try
             {
+                var config = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+
+                var nameSpace = config["Auth0:Namespace"];
+                //puedo leer el token
                 var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var jwtToken = tokenHandler.ReadJwtToken(token);
-                string email = jwtToken.Claims.First(claim => claim.Type == "email").Value;
+
+                // Buscar primero en claims del usuario validado por el middleware
+                var email = jwtToken.Claims.FirstOrDefault(c => c.Type == nameSpace + "email")?.Value;
 
                 if (string.IsNullOrEmpty(email))
                 {
-                    throw new ApiException("Email vacío, no se puede encontrar el usuario", (int)HttpStatusCode.Unauthorized, "No tiene permiso para realizar esta acción");
+                    throw new ApiException(
+                        "Email vacío, no se puede encontrar el usuario",
+                        (int)HttpStatusCode.Unauthorized,
+                        "No tiene permiso para realizar esta acción"
+                    );
                 }
 
                 return email;
@@ -40,10 +52,12 @@ namespace API_Client.Controllers
             }
             catch (Exception ex)
             {
-                throw new ApiException("Error al obtener el email del usuario", (int)HttpStatusCode.Unauthorized, ex.Message);
+                throw new ApiException(
+                    "Error al obtener el email del usuario",
+                    (int)HttpStatusCode.Unauthorized,
+                    ex.Message
+                );
             }
-
-
         }
 
 
@@ -60,8 +74,9 @@ namespace API_Client.Controllers
         {
             try
             {
+                string email = UserEmailFromJWT();
                 IList<TipoContratoDTO> tiposContratos = await _service.GetAllTiposContratos();
-                
+
                 return new ApiResponse("Operación exitosa", tiposContratos);
             }
             catch (ApiException)
@@ -136,6 +151,30 @@ namespace API_Client.Controllers
                 // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
 
                 throw new ApiException(ex);
+            }
+        }
+
+        [HttpPost]
+        [Route("cargar_usuario")]
+        public async Task<ApiResponse> CargarUsuario()
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                UsuarioDTO usuario = await _service.CargarUsuarioDesdeJWT(email);
+                return new ApiResponse("Operación exitosa", usuario);
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
             }
         }
     }
