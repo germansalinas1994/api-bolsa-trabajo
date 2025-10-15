@@ -88,6 +88,7 @@ builder.Services.AddScoped<GenericService, GenericService>();
 builder.Services.AddScoped<ServicePublicacion>();
 builder.Services.AddScoped<ServicePostulacion>();
 builder.Services.AddScoped<ServiceCandidato>();
+builder.Services.AddScoped<ServiceEmpresa>();
 
 
 
