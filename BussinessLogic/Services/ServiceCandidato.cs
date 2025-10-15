@@ -20,41 +20,37 @@ namespace BussinessLogic.Services
         {
             try
             {
-                // Buscar el perfil candidato por ID
-                var perfilesCandidatos = await _unitOfWork.GenericRepository<PerfilCandidato>().GetAll();
-                var perfilCandidato = perfilesCandidatos.FirstOrDefault(p => p.Id == perfilId && p.FechaBaja == null);
+                // Buscar el perfil candidato por ID usando GetByCriteria para filtrar por ID y FechaBaja
+                var perfilesCandidatos = await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteria(p => p.Id == perfilId && p.FechaBaja == null);
+                var perfilCandidato = perfilesCandidatos.FirstOrDefault();
 
                 if (perfilCandidato == null)
                 {
                     throw new ApiException("Perfil de candidato no encontrado", 404);
                 }
 
-                // Obtener usuario relacionado
-                var usuarios = await _unitOfWork.GenericRepository<Usuario>().GetAll();
-                var usuario = usuarios.FirstOrDefault(u => u.Id == perfilCandidato.IdUsuario);
+                // Obtener usuario relacionado usando GetById
+                var usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(perfilCandidato.IdUsuario);
 
-                // Obtener género relacionado si existe
+                // Obtener género relacionado si existe usando GetById
                 Genero? genero = null;
                 if (perfilCandidato.IdGenero.HasValue)
                 {
-                    var generos = await _unitOfWork.GenericRepository<Genero>().GetAll();
-                    genero = generos.FirstOrDefault(g => g.Id == perfilCandidato.IdGenero.Value);
+                    genero = await _unitOfWork.GenericRepository<Genero>().GetById(perfilCandidato.IdGenero.Value);
                 }
 
-                // Obtener carrera relacionada si existe
+                // Obtener carrera relacionada si existe usando GetById
                 Carrera? carrera = null;
                 if (perfilCandidato.IdCarrera.HasValue)
                 {
-                    var carreras = await _unitOfWork.GenericRepository<Carrera>().GetAll();
-                    carrera = carreras.FirstOrDefault(c => c.Id == perfilCandidato.IdCarrera.Value);
+                    carrera = await _unitOfWork.GenericRepository<Carrera>().GetById(perfilCandidato.IdCarrera.Value);
                 }
 
-                // Obtener rol relacionado a través del usuario
+                // Obtener rol relacionado a través del usuario usando GetById
                 Rol? rol = null;
                 if (usuario != null)
                 {
-                    var roles = await _unitOfWork.GenericRepository<Rol>().GetAll();
-                    rol = roles.FirstOrDefault(r => r.Id == usuario.IdRol);
+                    rol = await _unitOfWork.GenericRepository<Rol>().GetById(usuario.IdRol);
                 }
 
                 // Mapear campos básicos de PerfilCandidato
@@ -134,33 +130,30 @@ namespace BussinessLogic.Services
         {
             try
             {
-                // Buscar el perfil candidato
-                var perfilesCandidatos = await _unitOfWork.GenericRepository<PerfilCandidato>().GetAll();
-                var perfilCandidato = perfilesCandidatos.FirstOrDefault(p => p.IdUsuario == usuarioId && p.FechaBaja == null);
+                // Buscar el perfil candidato usando GetByCriteria para filtrar por IdUsuario y FechaBaja
+                var perfilesCandidatos = await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteria(p => p.IdUsuario == usuarioId && p.FechaBaja == null);
+                var perfilCandidato = perfilesCandidatos.FirstOrDefault();
 
                 if (perfilCandidato == null)
                 {
                     throw new ApiException("Perfil de candidato no encontrado", 404);
                 }
 
-                // Obtener usuario relacionado
-                var usuarios = await _unitOfWork.GenericRepository<Usuario>().GetAll();
-                var usuario = usuarios.FirstOrDefault(u => u.Id == perfilCandidato.IdUsuario);
+                // Obtener usuario relacionado usando GetById
+                var usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(perfilCandidato.IdUsuario);
 
-                // Obtener género relacionado si existe
+                // Obtener género relacionado si existe usando GetById
                 Genero? genero = null;
                 if (perfilCandidato.IdGenero.HasValue)
                 {
-                    var generos = await _unitOfWork.GenericRepository<Genero>().GetAll();
-                    genero = generos.FirstOrDefault(g => g.Id == perfilCandidato.IdGenero.Value);
+                    genero = await _unitOfWork.GenericRepository<Genero>().GetById(perfilCandidato.IdGenero.Value);
                 }
 
-                // Obtener carrera relacionada si existe
+                // Obtener carrera relacionada si existe usando GetById
                 Carrera? carrera = null;
                 if (perfilCandidato.IdCarrera.HasValue)
                 {
-                    var carreras = await _unitOfWork.GenericRepository<Carrera>().GetAll();
-                    carrera = carreras.FirstOrDefault(c => c.Id == perfilCandidato.IdCarrera.Value);
+                    carrera = await _unitOfWork.GenericRepository<Carrera>().GetById(perfilCandidato.IdCarrera.Value);
                 }
 
                 // Mapear a DTO
@@ -216,8 +209,9 @@ namespace BussinessLogic.Services
         {
             try
             {
-                var perfilesCandidatos = await _unitOfWork.GenericRepository<PerfilCandidato>().GetAll();
-                var perfilExistente = perfilesCandidatos.FirstOrDefault(p => p.Id == perfilDTO.Id && p.FechaBaja == null);
+                // Buscar el perfil existente usando GetByCriteria para filtrar por Id y FechaBaja
+                var perfilesCandidatos = await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteria(p => p.Id == perfilDTO.Id && p.FechaBaja == null);
+                var perfilExistente = perfilesCandidatos.FirstOrDefault();
 
                 if (perfilExistente == null)
                 {
