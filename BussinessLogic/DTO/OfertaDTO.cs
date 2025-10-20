@@ -29,6 +29,11 @@ namespace BussinessLogic.DTO
 
         public string? FechaFin { get; set; }
 
+        public string? NombreCarrera { get; set; }
+
+        // dato extra para vista de empresa
+        public int? CantidadPostulantes { get; set; }
+
 
         //datos para postularse
         public string? CartaPresentacion { get; set; }

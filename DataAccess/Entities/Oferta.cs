@@ -39,4 +39,7 @@ public partial class Oferta
     public virtual TipoContrato TipoContrato { get; set; } = null!;
 
     public virtual ICollection<Postulacion> Postulaciones { get; set; }
+
+    public virtual ICollection<OfertaCarrera> OfertaCarreras { get; set; }
+
 }
