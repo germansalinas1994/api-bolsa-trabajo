@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security.Cryptography.X509Certificates;
 using BussinessLogic.DTO;
 using DataAccess.IRepository;
@@ -93,7 +93,8 @@ namespace BussinessLogic.Services
         }
 
         public async Task<List<PostulacionDTO>> GetPostulaciones()
-        {try
+        {
+            try
             {
                 List<Postulacion> postulaciones = (await _unitOfWork
                     .GenericRepository<Postulacion>()
@@ -128,19 +129,21 @@ namespace BussinessLogic.Services
         }
 
         public async Task<PostulacionDTO> GetPostulacionById(int idPostulacion)
-        {try
+        {
+            try
             {
                 Postulacion _postulacion = await _unitOfWork.GenericRepository<Postulacion>().GetByIdIncludingSpecificRelations(idPostulacion,
-                q => q.Include(h => h.Historial).ThenInclude (ep => ep.EstadoPostulacion)
-                .Include(o => o.Oferta).ThenInclude (pf => pf.PerfilEmpresa)
-                .Include(o => o.Oferta).ThenInclude (m => m.Modalidad)
+                q => q.Include(h => h.Historial).ThenInclude(ep => ep.EstadoPostulacion)
+                .Include(o => o.Oferta).ThenInclude(pf => pf.PerfilEmpresa)
+                .Include(o => o.Oferta).ThenInclude(m => m.Modalidad)
                 .Include(o => o.Oferta).ThenInclude(tc => tc.TipoContrato)
                 .Include(o => o.Oferta).ThenInclude(l => l.Localidad).ThenInclude(p => p.Provincia).ThenInclude(pa => pa.Pais)
                 .Include(pc => pc.PerfilCandidato)
                  );
-/*                 Postulacion _postulacion = await _unitOfWork.GenericRepository<Postulacion>().GetById(idPostulacion); 
- */                if (_postulacion == null) 
-                    throw new ApiException("No existe la postulación", (int) HttpStatusCode.NotFound);
+                /*                 Postulacion _postulacion = await _unitOfWork.GenericRepository<Postulacion>().GetById(idPostulacion); 
+                 */
+                if (_postulacion == null)
+                    throw new ApiException("No existe la postulación", (int)HttpStatusCode.NotFound);
                 return _postulacion.Adapt<PostulacionDTO>();
             }
             catch (ApiException)
@@ -150,6 +153,104 @@ namespace BussinessLogic.Services
             catch (Exception ex)
             {
                 throw ex;
+            }
+        }
+
+        // GET último mes por idPerfilCandidato
+        public async Task<IList<PostulacionDTO>> GetUltimoMesByEstudiante(int idPerfilCandidato, CancellationToken ct = default)
+        {
+            try
+            {
+                var desde = DateTime.UtcNow.AddDays(-30);
+
+                var postulaciones = await _unitOfWork.GenericRepository<Postulacion>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        p => p.IdPerfilCandidato == idPerfilCandidato &&
+                             p.FechaBaja == null &&
+                             p.FechaAlta >= desde,
+                        include: q => q
+                            .AsNoTracking()
+                            .Include(p => p.Oferta)
+                                .ThenInclude(o => o.PerfilEmpresa)
+                                    .ThenInclude(pe => pe.Usuario)
+                    );
+
+                var postIds = postulaciones.Select(p => p.Id).Distinct().ToList();
+                if (postIds.Count == 0) return new List<PostulacionDTO>();
+
+                var historiales = await _unitOfWork.GenericRepository<PostulacionHistorial>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        h => postIds.Contains(h.IdPostulacion),
+                        include: q => q
+                            .AsNoTracking()
+                            .Include(h => h.EstadoPostulacion)
+                    );
+
+                var estados = historiales
+                    .GroupBy(h => h.IdPostulacion)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Where(h => h.FechaBaja == null)
+                              .OrderByDescending(h => h.FechaAlta)
+                              .Select(h => h.EstadoPostulacion.Nombre)
+                              .FirstOrDefault()
+                           ?? g.OrderByDescending(h => h.FechaAlta)
+                               .Select(h => h.EstadoPostulacion.Nombre)
+                               .FirstOrDefault()
+                           ?? "En revisión"
+                    );
+
+                var ctx = new MapContext();
+                ctx.Parameters["Estados"] = estados;
+
+                var result = postulaciones
+                .OrderByDescending(p => p.FechaAlta)
+                .ToList()
+                .BuildAdapter()                           // <-- crea el adaptador para esta conversión
+                .AddParameters("Estados", estados)        // <-- pasa parámetros al mapeo (MapContext.Parameters)
+                .AdaptToType<List<PostulacionDTO>>();     // <-- destino
+
+                return result;
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw new ApiException(ex); }
+        }
+        
+        public async Task<IList<PostulacionDTO>> GetPostulacionesPorOferta(int idOferta)
+        {
+            try
+            {
+                var postulaciones = (await _unitOfWork.GenericRepository<Postulacion>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        p => p.IdOferta == idOferta && p.FechaBaja == null,
+                        q => q
+                            .Include(p => p.PerfilCandidato)
+                                .ThenInclude(pc => pc.Usuario)
+                            .Include(p => p.Historial)
+                                .ThenInclude(h => h.EstadoPostulacion)
+                    )).ToList();
+
+                var resultado = postulaciones.Select(p => new PostulacionDTO
+                {
+                    Id = p.Id,
+                    IdPerfilCandidato = p.IdPerfilCandidato,
+                    IdOferta = p.IdOferta,
+                    CartaPresentacion = p.CartaPresentacion,
+                    Observacion = p.Observacion,
+                    EstadoPostulacion = p.Historial?
+                        .OrderByDescending(h => h.FechaAlta)
+                        .FirstOrDefault()?.EstadoPostulacion?.Nombre ?? "Sin estado",
+                    FechaPostulacion = p.FechaAlta.ToString("yyyy-MM-dd"),
+                    TituloOferta = p.Oferta?.Titulo,
+                    NombreEmpresa = p.Oferta?.PerfilEmpresa?.RazonSocial
+                }).ToList();
+
+                return resultado;
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener postulaciones de la oferta: {ex.Message}", ex);
             }
         }
     }

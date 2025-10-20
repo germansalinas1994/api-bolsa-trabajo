@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -67,10 +67,11 @@ namespace API_Client.Controllers
         }
         [HttpGet]
         [Route("get_postulacion")]
-        public async Task<ApiResponse> GetPostulacionById([FromQuery]int idPostulacion) {
+        public async Task<ApiResponse> GetPostulacionById([FromQuery] int idPostulacion)
+        {
             try
             {
-                if (idPostulacion == 0) 
+                if (idPostulacion == 0)
                     throw new ApiException("Debes indicar el ID de la postulación", (int)HttpStatusCode.BadRequest);
                 PostulacionDTO _postulacion = await _service.GetPostulacionById(idPostulacion);
                 return new ApiResponse("Postulación encontrada exitosamente", _postulacion);
@@ -79,11 +80,53 @@ namespace API_Client.Controllers
             {
                 throw e;
             }
-            catch (Exception ex){
+            catch (Exception ex)
+            {
                 throw ex;
-            } 
+            }
         }
 
+        /// <summary>
+        /// Devuelve las postulaciones del último mes del estudiante (por IdPerfilCandidato).
+        /// </summary>
+        /// <param name="idEstudiante">Id del perfil candidato</param>
+        [HttpGet("{idEstudiante:int}/ultimo-mes")]
+        [ProducesResponseType(typeof(IEnumerable<PostulacionDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ApiResponse> GetUltimoMes(int idEstudiante, CancellationToken ct)
+        {
+            try
+            {
+                if (idEstudiante == 0)
+                    throw new ApiException("Debes indicar el ID del Estudiante", (int)HttpStatusCode.BadRequest);
+                IList<PostulacionDTO> data = await _service.GetUltimoMesByEstudiante(idEstudiante, ct);
+                return new ApiResponse("Postulación encontrada exitosamente", data);
+            }
+            catch (ApiException e)
+            {
+                throw e;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        [HttpGet("get_postulaciones_por_oferta/{idOferta}")]
+        [ProducesResponseType(typeof(PostulacionDTO), StatusCodes.Status200OK)]
+        public async Task<ApiResponse> GetPostulacionesPorOferta([FromRoute] int idOferta)
+        {
+            try
+            {
+                var data = await _service.GetPostulacionesPorOferta(idOferta);
+                return new ApiResponse("Postulaciones obtenidas correctamente", data);
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw new ApiException(ex); }
         }
     }
-
+}

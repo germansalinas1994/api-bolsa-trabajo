@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using DataAccess.Entities;
 
@@ -25,8 +25,7 @@ namespace BussinessLogic.DTO
         public string? DescripcionLocalidad { get; set; }
         public string? DescripcionProvincia { get; set; }
         public string? DescripcionPais { get; set; }
-
-
+        public string? NombreCandidato { get; set; }
     }
 
 }
