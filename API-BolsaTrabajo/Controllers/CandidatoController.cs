@@ -54,6 +54,59 @@ public class CandidatoController : GenericController
         }
     }
 
+    [HttpGet]
+    [Route("verificar_perfil")]
+    public async Task<ApiResponse> VerificarPerfil([FromQuery] string email)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ApiException("Email es requerido", (int)HttpStatusCode.BadRequest);
+            }
+
+            var resultado = await _serviceCandidato.VerificarPerfilCompleto(email);
+            return new ApiResponse(resultado);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+
+    [HttpPost]
+    [Route("completar_perfil")]
+    public async Task<ApiResponse> CompletarPerfil([FromBody] PerfilCandidatoDTO perfilDTO)
+    {
+        try
+        {
+            if (perfilDTO == null)
+            {
+                throw new ApiException("Los datos del perfil son requeridos", (int)HttpStatusCode.BadRequest);
+            }
+
+            if (string.IsNullOrEmpty(perfilDTO.Email))
+            {
+                throw new ApiException("Email es requerido", (int)HttpStatusCode.BadRequest);
+            }
+
+            var perfilCompleto = await _serviceCandidato.CompletarPerfil(perfilDTO);
+            return new ApiResponse("Perfil completado exitosamente", perfilCompleto);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+
     [HttpPut]
     [Route("update_perfil")]
     public async Task<ApiResponse> UpdatePerfil([FromBody] PerfilCandidatoDTO perfilDTO)
