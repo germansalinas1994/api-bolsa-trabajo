@@ -155,8 +155,8 @@ namespace BussinessLogic.Services
                 throw ex;
             }
         }
-        
-         // GET último mes por idPerfilCandidato
+
+        // GET último mes por idPerfilCandidato
         public async Task<IList<PostulacionDTO>> GetUltimoMesByEstudiante(int idPerfilCandidato, CancellationToken ct = default)
         {
             try
@@ -210,10 +210,48 @@ namespace BussinessLogic.Services
                 .AddParameters("Estados", estados)        // <-- pasa parámetros al mapeo (MapContext.Parameters)
                 .AdaptToType<List<PostulacionDTO>>();     // <-- destino
 
-            return result;
+                return result;
             }
             catch (ApiException) { throw; }
             catch (Exception ex) { throw new ApiException(ex); }
+        }
+        
+        public async Task<IList<PostulacionDTO>> GetPostulacionesPorOferta(int idOferta)
+        {
+            try
+            {
+                var postulaciones = (await _unitOfWork.GenericRepository<Postulacion>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        p => p.IdOferta == idOferta && p.FechaBaja == null,
+                        q => q
+                            .Include(p => p.PerfilCandidato)
+                                .ThenInclude(pc => pc.Usuario)
+                            .Include(p => p.Historial)
+                                .ThenInclude(h => h.EstadoPostulacion)
+                    )).ToList();
+
+                var resultado = postulaciones.Select(p => new PostulacionDTO
+                {
+                    Id = p.Id,
+                    IdPerfilCandidato = p.IdPerfilCandidato,
+                    IdOferta = p.IdOferta,
+                    CartaPresentacion = p.CartaPresentacion,
+                    Observacion = p.Observacion,
+                    EstadoPostulacion = p.Historial?
+                        .OrderByDescending(h => h.FechaAlta)
+                        .FirstOrDefault()?.EstadoPostulacion?.Nombre ?? "Sin estado",
+                    FechaPostulacion = p.FechaAlta.ToString("yyyy-MM-dd"),
+                    TituloOferta = p.Oferta?.Titulo,
+                    NombreEmpresa = p.Oferta?.PerfilEmpresa?.RazonSocial
+                }).ToList();
+
+                return resultado;
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener postulaciones de la oferta: {ex.Message}", ex);
+            }
         }
     }
 }

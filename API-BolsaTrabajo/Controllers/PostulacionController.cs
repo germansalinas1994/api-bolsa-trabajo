@@ -115,5 +115,18 @@ namespace API_Client.Controllers
                 throw ex;
             }
         }
+
+        [HttpGet("get_postulaciones_por_oferta/{idOferta}")]
+        [ProducesResponseType(typeof(PostulacionDTO), StatusCodes.Status200OK)]
+        public async Task<ApiResponse> GetPostulacionesPorOferta([FromRoute] int idOferta)
+        {
+            try
+            {
+                var data = await _service.GetPostulacionesPorOferta(idOferta);
+                return new ApiResponse("Postulaciones obtenidas correctamente", data);
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw new ApiException(ex); }
+        }
     }
 }
