@@ -75,6 +75,7 @@ public partial class DbBolsaTrabajoContext : DbContext
             e.HasOne(x => x.Localidad)
             .WithMany()
             .HasForeignKey(x => x.IdLocalidad);
+
         });
 
         modelBuilder.Entity<Localidad>(e =>
@@ -97,15 +98,15 @@ public partial class DbBolsaTrabajoContext : DbContext
       });
 
         modelBuilder.Entity<OfertaCarrera>(e =>
-      {
-          e.HasOne(x => x.Carrera)
-          .WithMany()
-          .HasForeignKey(x => x.IdCarrera);
+        {
+            e.HasOne(x => x.Carrera)
+                .WithMany(c => c.OfertaCarreras)
+                .HasForeignKey(x => x.IdCarrera);
 
-          e.HasOne(x => x.Oferta)
-          .WithMany()
-          .HasForeignKey(x => x.IdOferta);
-      });
+            e.HasOne(x => x.Oferta)
+                .WithMany(o => o.OfertaCarreras)
+                .HasForeignKey(x => x.IdOferta);
+        });
 
         modelBuilder.Entity<OfertaCategoria>(e =>
         {
@@ -130,19 +131,18 @@ public partial class DbBolsaTrabajoContext : DbContext
       });
 
         modelBuilder.Entity<PerfilCandidato>(e =>
-       {
-           e.HasOne(x => x.Genero)
-           .WithMany()
-           .HasForeignKey(x => x.IdGenero);
+    {
+        e.HasOne(x => x.Usuario)
+            .WithMany()
+            .HasForeignKey(x => x.IdUsuario);
 
-           e.HasOne(x => x.Usuario)
-           .WithMany()
-           .HasForeignKey(x => x.IdUsuario);
-
-           e.HasOne(x => x.Carrera) 
+        e.HasOne(x => x.Carrera)
             .WithMany()
             .HasForeignKey(x => x.IdCarrera);
-       });
+        e.HasOne(x => x.Genero)
+            .WithMany()
+            .HasForeignKey(x => x.IdGenero);
+    });
 
         modelBuilder.Entity<PerfilEmpresa>(e =>
       {
@@ -156,17 +156,15 @@ public partial class DbBolsaTrabajoContext : DbContext
       });
 
         modelBuilder.Entity<Postulacion>(e =>
-     {
-         e.HasOne(x => x.Oferta)
-         //si quisiera mapear una relacion inversa para traer la coleccion directamente
-         .WithMany(o => o.Postulaciones)
-         //  .WithMany()
-         .HasForeignKey(x => x.IdOferta);
+    {
+        e.HasOne(x => x.Oferta)
+            .WithMany(o => o.Postulaciones)
+            .HasForeignKey(x => x.IdOferta);
 
-         e.HasOne(x => x.PerfilCandidato)
-         .WithMany()
-         .HasForeignKey(x => x.IdPerfilCandidato);
-     });
+        e.HasOne(x => x.PerfilCandidato)
+            .WithMany()
+            .HasForeignKey(x => x.IdPerfilCandidato);
+    });
 
         modelBuilder.Entity<PostulacionHistorial>(e =>
            {
