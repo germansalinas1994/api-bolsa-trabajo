@@ -218,9 +218,10 @@ namespace BussinessLogic.Services
                     throw new ApiException("Perfil de candidato no encontrado", 404);
                 }
 
-                // Actualizar campos
+                // Actualizar campos del perfil
                 perfilExistente.Descripcion = perfilDTO.Descripcion ?? perfilExistente.Descripcion;
                 perfilExistente.IdGenero = perfilDTO.IdGenero ?? perfilExistente.IdGenero;
+                perfilExistente.IdCarrera = perfilDTO.IdCarrera ?? perfilExistente.IdCarrera;
                 perfilExistente.Legajo = perfilDTO.Legajo ?? perfilExistente.Legajo;
                 perfilExistente.AnioEgreso = perfilDTO.AnioEgreso ?? perfilExistente.AnioEgreso;
                 perfilExistente.FechaModificacion = DateTime.Now;
@@ -229,6 +230,19 @@ namespace BussinessLogic.Services
                 if (!string.IsNullOrEmpty(perfilDTO.Cv))
                 {
                     perfilExistente.Cv = Convert.FromBase64String(perfilDTO.Cv);
+                }
+
+                // Si se proporciona un nombre, actualizar el nombre del usuario
+                if (!string.IsNullOrEmpty(perfilDTO.Nombre))
+                {
+                    var usuarios = await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(u => u.Id == perfilExistente.IdUsuario && u.FechaBaja == null);
+                    var usuario = usuarios.FirstOrDefault();
+                    
+                    if (usuario != null)
+                    {
+                        usuario.Nombre = perfilDTO.Nombre;
+                        await _unitOfWork.GenericRepository<Usuario>().Update(usuario);
+                    }
                 }
 
                 await _unitOfWork.BeginTransactionAsync();
@@ -267,6 +281,158 @@ namespace BussinessLogic.Services
             }
 
             return Math.Min(porcentaje, 100); // Máximo 100%
+        }
+
+        public async Task<object> VerificarPerfilCompleto(string email)
+        {
+            try
+            {
+                // Buscar usuario por email
+                var usuarios = await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(u => u.Email == email && u.FechaBaja == null);
+                var usuario = usuarios.FirstOrDefault();
+
+                if (usuario == null)
+                {
+                    return new { perfilCompleto = false, mensaje = "Usuario no encontrado" };
+                }
+
+                // Buscar perfil de candidato
+                var perfiles = await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteria(p => p.IdUsuario == usuario.Id && p.FechaBaja == null);
+                var perfil = perfiles.FirstOrDefault();
+
+                if (perfil == null)
+                {
+                    return new { perfilCompleto = false, mensaje = "Perfil no encontrado" };
+                }
+
+                // Verificar si los campos obligatorios están completos
+                bool perfilCompleto = !string.IsNullOrEmpty(usuario.Nombre) &&
+                                     perfil.IdGenero.HasValue &&
+                                     perfil.IdCarrera.HasValue &&
+                                     !string.IsNullOrEmpty(perfil.Legajo) &&
+                                     perfil.AnioEgreso.HasValue &&
+                                     usuario.Activo == true;
+
+                return new 
+                { 
+                    perfilCompleto = perfilCompleto,
+                    usuario = new 
+                    {
+                        id = usuario.Id,
+                        email = usuario.Email,
+                        nombre = usuario.Nombre,
+                        activo = usuario.Activo
+                    },
+                    perfil = new 
+                    {
+                        id = perfil.Id,
+                        idGenero = perfil.IdGenero,
+                        idCarrera = perfil.IdCarrera,
+                        legajo = perfil.Legajo,
+                        anioEgreso = perfil.AnioEgreso
+                    }
+                };
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex);
+            }
+        }
+
+        public async Task<PerfilCandidatoDTO> CompletarPerfil(PerfilCandidatoDTO perfilDTO)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                // Validar datos obligatorios
+                if (string.IsNullOrEmpty(perfilDTO.Email))
+                {
+                    throw new ApiException("Email es requerido", 400);
+                }
+                if (string.IsNullOrEmpty(perfilDTO.Nombre))
+                {
+                    throw new ApiException("Nombre es requerido", 400);
+                }
+                if (!perfilDTO.IdGenero.HasValue)
+                {
+                    throw new ApiException("Género es requerido", 400);
+                }
+                if (!perfilDTO.IdCarrera.HasValue)
+                {
+                    throw new ApiException("Carrera es requerida", 400);
+                }
+                if (string.IsNullOrEmpty(perfilDTO.Legajo))
+                {
+                    throw new ApiException("Legajo es requerido", 400);
+                }
+
+                // Buscar usuario por email
+                var usuarios = await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(u => u.Email == perfilDTO.Email && u.FechaBaja == null);
+                var usuario = usuarios.FirstOrDefault();
+
+                if (usuario == null)
+                {
+                    throw new ApiException("Usuario no encontrado", 404);
+                }
+
+                // Actualizar datos del usuario
+                usuario.Nombre = perfilDTO.Nombre;
+                usuario.Activo = true;
+                usuario.FechaModificacion = DateTime.Now;
+                await _unitOfWork.GenericRepository<Usuario>().Update(usuario);
+
+                // Buscar o crear perfil de candidato
+                var perfiles = await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteria(p => p.IdUsuario == usuario.Id && p.FechaBaja == null);
+                var perfil = perfiles.FirstOrDefault();
+
+                if (perfil == null)
+                {
+                    // Crear nuevo perfil
+                    perfil = new PerfilCandidato
+                    {
+                        IdUsuario = usuario.Id,
+                        IdGenero = perfilDTO.IdGenero,
+                        IdCarrera = perfilDTO.IdCarrera,
+                        Legajo = perfilDTO.Legajo,
+                        AnioEgreso = perfilDTO.AnioEgreso ?? DateTime.Now.Year,
+                        Descripcion = perfilDTO.Descripcion ?? string.Empty,
+                        FechaAlta = DateTime.Now,
+                        FechaModificacion = DateTime.Now
+                    };
+                    perfil = await _unitOfWork.GenericRepository<PerfilCandidato>().Insert(perfil);
+                }
+                else
+                {
+                    // Actualizar perfil existente
+                    perfil.IdGenero = perfilDTO.IdGenero;
+                    perfil.IdCarrera = perfilDTO.IdCarrera;
+                    perfil.Legajo = perfilDTO.Legajo;
+                    perfil.AnioEgreso = perfilDTO.AnioEgreso ?? perfil.AnioEgreso;
+                    perfil.Descripcion = perfilDTO.Descripcion ?? perfil.Descripcion;
+                    perfil.FechaModificacion = DateTime.Now;
+                    await _unitOfWork.GenericRepository<PerfilCandidato>().Update(perfil);
+                }
+
+                await _unitOfWork.CommitAsync();
+
+                // Retornar el perfil actualizado
+                return await GetPerfilById(perfil.Id);
+            }
+            catch (ApiException)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw new ApiException(ex);
+            }
         }
     }
 }

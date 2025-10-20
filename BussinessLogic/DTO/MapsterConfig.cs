@@ -40,8 +40,9 @@ namespace BussinessLogic.DTO
 
             TypeAdapterConfig<Carrera, CarreraDTO>
                 .NewConfig()
+                .Map(d => d.Id, s => s.Id)
                 .Map(d => d.Codigo, s => s.Codigo)
-                .Map(d => d.Descripcion, s => s.Nombre);
+                .Map(d => d.Nombre, s => s.Nombre);
 
             TypeAdapterConfig<Postulacion, PostulacionDTO>
                 .NewConfig()
