@@ -73,7 +73,7 @@ builder.Services.AddSwaggerGen(c =>
 // builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection")));
 
 //base de datos local
-builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection-local")));
+builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection-Gonza")));
 
 //agrego la inyeccion de dependencia de los repositorios y el UnitOfWork
 
@@ -87,6 +87,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<GenericService, GenericService>();
 builder.Services.AddScoped<ServicePublicacion>();
 builder.Services.AddScoped<ServicePostulacion>();
+builder.Services.AddScoped<ServiceCandidato>();
+builder.Services.AddScoped<ServiceEmpresa>();
 
 
 

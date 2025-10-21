@@ -108,24 +108,7 @@ DECLARE @idUsuarioEmpresa  INT = (SELECT id FROM dbo.Usuario WHERE email='empres
 DECLARE @idUsuarioCandidato INT = (SELECT id FROM dbo.Usuario WHERE email='candidato@alumno.utn.edu.ar');
 
 ------------------------------------------------------------
--- 4) Perfiles
-------------------------------------------------------------
-DECLARE @idEstadoValPend  INT = (SELECT id FROM dbo.EstadoValidacion WHERE codigo='Pendiente');
-DECLARE @idGeneroMasc     INT = (SELECT id FROM dbo.Genero WHERE codigo='Masculino');
-
-IF NOT EXISTS (SELECT 1 FROM dbo.PerfilEmpresa WHERE idUsuario=@idUsuarioEmpresa)
-INSERT dbo.PerfilEmpresa(idUsuario,razonSocial,cuit,descripcion,idEstadoValidacion,fechaAlta,fechaModificacion,fechaBaja)
-VALUES (@idUsuarioEmpresa,'ACME S.A.','30-12345678-9','Empresa de ejemplo para seeds',@idEstadoValPend,@now,@now,NULL);
-
-IF NOT EXISTS (SELECT 1 FROM dbo.PerfilCandidato WHERE idUsuario=@idUsuarioCandidato)
-INSERT dbo.PerfilCandidato(idUsuario,idGenero,legajo,anioEgreso,cv,descripcion,fechaAlta,fechaModificacion,fechaBaja)
-VALUES (@idUsuarioCandidato,@idGeneroMasc,'12345',2024,NULL,'Candidato seed para pruebas',@now,@now,NULL);
-
-DECLARE @idPerfilEmp INT = (SELECT id FROM dbo.PerfilEmpresa   WHERE idUsuario=@idUsuarioEmpresa);
-DECLARE @idPerfilCan INT = (SELECT id FROM dbo.PerfilCandidato WHERE idUsuario=@idUsuarioCandidato);
-
-------------------------------------------------------------
--- 5) Catálogos carrera / categoría (mínimos)
+-- Catálogos carrera / categoría (mínimos) [antes de Perfiles para usar idCarrera]
 ------------------------------------------------------------
 IF NOT EXISTS (SELECT 1 FROM dbo.Carrera WHERE codigo='ISI')
 INSERT dbo.Carrera(codigo,nombre) VALUES ('ISI','Ingeniería en Sistemas de Información');
@@ -139,6 +122,25 @@ INSERT dbo.Categoria(nombre,codigo) VALUES ('Datos/Analytics','DATA');
 
 DECLARE @idCarreraISI INT = (SELECT id FROM dbo.Carrera  WHERE codigo='ISI');
 DECLARE @idCategoriaBE INT = (SELECT id FROM dbo.Categoria WHERE codigo='BACKEND');
+
+------------------------------------------------------------
+-- 4) Perfiles
+------------------------------------------------------------
+DECLARE @idEstadoValPend  INT = (SELECT id FROM dbo.EstadoValidacion WHERE codigo='Pendiente');
+DECLARE @idGeneroMasc     INT = (SELECT id FROM dbo.Genero WHERE codigo='Masculino');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.PerfilEmpresa WHERE idUsuario=@idUsuarioEmpresa)
+INSERT dbo.PerfilEmpresa(idUsuario,razonSocial,cuit,descripcion,idEstadoValidacion,fechaAlta,fechaModificacion,fechaBaja)
+VALUES (@idUsuarioEmpresa,'ACME S.A.','30-12345678-9','Empresa de ejemplo para seeds',@idEstadoValPend,@now,@now,NULL);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.PerfilCandidato WHERE idUsuario=@idUsuarioCandidato)
+INSERT dbo.PerfilCandidato(idUsuario,idGenero,idCarrera,legajo,anioEgreso,cv,descripcion,fechaAlta,fechaModificacion,fechaBaja)
+VALUES (@idUsuarioCandidato,@idGeneroMasc,@idCarreraISI,'12345',2024,NULL,'Candidato seed para pruebas',@now,@now,NULL);
+
+DECLARE @idPerfilEmp INT = (SELECT id FROM dbo.PerfilEmpresa   WHERE idUsuario=@idUsuarioEmpresa);
+DECLARE @idPerfilCan INT = (SELECT id FROM dbo.PerfilCandidato WHERE idUsuario=@idUsuarioCandidato);
+
+ 
 
 ------------------------------------------------------------
 -- 6) Oferta de ejemplo

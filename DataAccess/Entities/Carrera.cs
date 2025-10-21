@@ -11,4 +11,6 @@ public partial class Carrera
 
     public string? Nombre { get; set; }
 
+    public virtual ICollection<OfertaCarrera> OfertaCarreras { get; set; }
+
 }
