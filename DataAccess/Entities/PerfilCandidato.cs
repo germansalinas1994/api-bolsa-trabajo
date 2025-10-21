@@ -7,7 +7,7 @@ public partial class PerfilCandidato
 {
     public int Id { get; set; }
 
-    public string Descripcion { get; set; } = null!;
+    public string? Descripcion { get; set; }
 
     public int IdUsuario { get; set; }
 

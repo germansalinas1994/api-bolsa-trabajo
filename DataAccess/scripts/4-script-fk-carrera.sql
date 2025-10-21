@@ -1,0 +1,25 @@
+USE [db-bolsa-trabajo-local];
+GO
+
+-- Primero verificar si la columna existe, en caso de que no esté
+IF COL_LENGTH('dbo.PerfilCandidato', 'idCarrera') IS NULL
+BEGIN
+    ALTER TABLE dbo.PerfilCandidato
+        ADD idCarrera INT NULL;
+END
+GO
+
+-- Crear la foreign key si no existe
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.foreign_keys
+    WHERE name = 'FK_PerfilCandidato_Carrera'
+      AND parent_object_id = OBJECT_ID('dbo.PerfilCandidato')
+)
+BEGIN
+    ALTER TABLE dbo.PerfilCandidato
+        ADD CONSTRAINT FK_PerfilCandidato_Carrera
+        FOREIGN KEY (idCarrera)
+        REFERENCES dbo.Carrera(id);
+END
+GO
