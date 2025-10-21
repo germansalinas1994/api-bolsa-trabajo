@@ -171,5 +171,62 @@ namespace BussinessLogic.Services
                 throw new ApiException(ex);
             }
         }
+
+        public async Task<IList<LocalidadDTO>> GetAllLocalidades()
+        {
+            try
+            {
+                List<Localidad> localidades = (await _unitOfWork.GenericRepository<Localidad>()
+                    .GetAllIncludingSpecificRelations(
+                        q => q.Include(l => l.Provincia)
+                        .ThenInclude(p => p.Pais)
+                    )
+                ).ToList();
+
+                return localidades.Adapt<List<LocalidadDTO>>();
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+        }
+
+        public async Task<int> GetPerfilEmpresaUsuario(string email)
+        {
+            try
+            {
+                // Buscar el usuario por email
+                var usuario = (await _unitOfWork.GenericRepository<Usuario>()
+                    .GetByCriteria(u => u.Email == email && u.FechaBaja == null && u.Activo == true))
+                    .FirstOrDefault();
+
+                if (usuario == null)
+                    throw new ApiException("Usuario no encontrado", (int)HttpStatusCode.NotFound);
+
+                // Buscar el perfil de empresa del usuario
+                var perfilEmpresa = (await _unitOfWork.GenericRepository<PerfilEmpresa>()
+                    .GetByCriteria(pe => pe.IdUsuario == usuario.Id && pe.FechaBaja == null))
+                    .FirstOrDefault();
+
+                if (perfilEmpresa == null)
+                    throw new ApiException("El usuario no tiene un perfil de empresa asociado", (int)HttpStatusCode.NotFound);
+
+                return perfilEmpresa.Id;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Error al obtener perfil de empresa: {ex.Message}", (int)HttpStatusCode.InternalServerError);
+            }
+        }
     }
 }

@@ -28,11 +28,13 @@ namespace BussinessLogic.DTO
 
             TypeAdapterConfig<TipoContrato, TipoContratoDTO>
              .NewConfig()
+             .Map(d => d.Id, s => s.Id)
              .Map(d => d.Codigo, s => s.Codigo)
              .Map(d => d.Descripcion, s => s.Nombre);
 
             TypeAdapterConfig<Modalidad, ModalidadDTO>
                 .NewConfig()
+                .Map(d => d.Id, s => s.Id)
                 .Map(d => d.Codigo, s => s.Codigo)
                 .Map(d => d.Descripcion, s => s.Nombre);
 
@@ -41,6 +43,20 @@ namespace BussinessLogic.DTO
                 .Map(d => d.Id, s => s.Id)
                 .Map(d => d.Codigo, s => s.Codigo)
                 .Map(d => d.Nombre, s => s.Nombre);
+
+            // CrearOfertaDTO -> Oferta (ignora IdPerfilEmpresa ya que se asigna manualmente)
+            TypeAdapterConfig<CrearOfertaDTO, Oferta>
+                .NewConfig()
+                .Ignore(d => d.Id)
+                .Ignore(d => d.IdPerfilEmpresa)
+                .Ignore(d => d.FechaAlta)
+                .Ignore(d => d.FechaModificacion)
+                .Ignore(d => d.FechaBaja)
+                .Ignore(d => d.Localidad)
+                .Ignore(d => d.Modalidad)
+                .Ignore(d => d.PerfilEmpresa)
+                .Ignore(d => d.TipoContrato)
+                .Ignore(d => d.Postulaciones);
 
             TypeAdapterConfig<Postulacion, PostulacionDTO>
                 .NewConfig()
