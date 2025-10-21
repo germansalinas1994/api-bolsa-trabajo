@@ -126,7 +126,7 @@ namespace API_Client.Controllers
 
 
         [HttpGet]
-        [ProducesResponseType(typeof(TipoContratoDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ModalidadDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
@@ -139,6 +139,35 @@ namespace API_Client.Controllers
             {
                 IList<ModalidadDTO> modalidades = await _service.GetAllModalidades();
                 return new ApiResponse("Operación exitosa", modalidades);
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
+                throw new ApiException(ex);
+            }
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(LocalidadDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        [Route("get_localidades")]
+        public async Task<ApiResponse> GetAllLocalidades()
+        {
+            try
+            {
+                IList<LocalidadDTO> localidades = await _service.GetAllLocalidades();
+                return new ApiResponse("Operación exitosa", localidades);
             }
             catch (ApiException)
             {
@@ -174,6 +203,26 @@ namespace API_Client.Controllers
                 // Manejo de excepciones
                 // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
 
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("get_perfil_empresa_usuario")]
+        public async Task<ApiResponse> GetPerfilEmpresaUsuario()
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                int idPerfilEmpresa = await _service.GetPerfilEmpresaUsuario(email);
+                return new ApiResponse("Operación exitosa", new { idPerfilEmpresa });
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
                 throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
             }
         }
