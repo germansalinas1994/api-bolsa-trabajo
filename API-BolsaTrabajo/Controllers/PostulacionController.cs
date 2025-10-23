@@ -28,7 +28,8 @@ namespace API_Client.Controllers
         {
             try
             {
-                List<PostulacionDTO> postulaciones = await _service.GetPostulaciones();
+                string email = UserEmailFromJWT();
+                List<PostulacionDTO> postulaciones = await _service.GetPostulaciones(email);
                 return new ApiResponse(postulaciones);
             }
             catch (ApiException e)
@@ -47,12 +48,14 @@ namespace API_Client.Controllers
         {
             try
             {
-                if (data.IdPerfilCandidato == null || data.IdOferta == null)
+                if (data.IdOferta == null)
                 {
-                    throw new ApiException("IdPerfilCandidato e IdOferta son obligatorios", (int)HttpStatusCode.BadRequest);
+                    throw new ApiException("IdOferta son obligatorios", (int)HttpStatusCode.BadRequest);
                 }
 
-                await _service.CrearPostulacion(data);
+                string email = UserEmailFromJWT();
+
+                await _service.CrearPostulacion(data, email);
 
                 return new ApiResponse("Postulación creada exitosamente");
             }
