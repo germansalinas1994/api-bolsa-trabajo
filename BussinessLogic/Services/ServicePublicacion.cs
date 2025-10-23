@@ -237,6 +237,12 @@ namespace BussinessLogic.Services
                     IList<int> idsTiposContrato = (await _unitOfWork.GenericRepository<TipoContrato>().GetByCriteria(m => filtro.TiposContrato.Contains(m.Codigo))).Select(m => m.Id).ToList();
                     search = search.Where(o => idsTiposContrato.Contains(o.IdTipoContrato));
                 }
+                
+                if (filtro.Carreras != null && filtro.Carreras.Count > 0)
+                {
+                    IList<int> idsCarreras = (await _unitOfWork.GenericRepository<Carrera>().GetByCriteria(c => filtro.Carreras.Contains(c.Codigo))).Select(c => c.Id).ToList();
+                    search = search.Where(o => o.OfertaCarreras.Any(oc => idsCarreras.Contains(oc.IdCarrera) && oc.FechaBaja == null));
+                }
 
                 List<Oferta> oferta = search
                     .Include(pe => pe.PerfilEmpresa)
@@ -246,6 +252,8 @@ namespace BussinessLogic.Services
                     .Include(l => l.Localidad)
                         .ThenInclude(p => p.Provincia)
                             .ThenInclude(p => p.Pais)
+                    .Include(o => o.OfertaCarreras)
+                        .ThenInclude(oc => oc.Carrera)
                     .ToList();
 
                 return oferta.Adapt<List<OfertaDTO>>();
