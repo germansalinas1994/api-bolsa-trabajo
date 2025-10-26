@@ -10,6 +10,7 @@ namespace BussinessLogic.DTO
         public string? Email { get; set; }
         public string? Nombre { get; set; }
         public int? IdRol { get; set; }
+        public string? FotoPerfil { get; set; }
 
         public string? Activo { get; set; }
 
