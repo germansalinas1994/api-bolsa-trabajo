@@ -14,6 +14,7 @@ public partial class Usuario
 
     public string Email { get; set; } = null!;
 
+    public string? FotoPerfil { get; set; }
 
     public bool? Activo { get; set; }
 
