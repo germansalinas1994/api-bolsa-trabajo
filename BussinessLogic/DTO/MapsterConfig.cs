@@ -61,7 +61,7 @@ namespace BussinessLogic.DTO
             TypeAdapterConfig<Postulacion, PostulacionDTO>
                 .NewConfig()
                 .Map(d => d.EstadoPostulacion,
-                    s => s.Historial != null ? s.Historial .OrderByDescending(h => h.FechaModificacion)
+                    s => s.Historial != null ? s.Historial.OrderByDescending(h => h.FechaModificacion)
                             .Select(h => h.EstadoPostulacion.Nombre)
                             .FirstOrDefault() : string.Empty)
 
@@ -76,6 +76,16 @@ namespace BussinessLogic.DTO
                 .Map(d => d.DescripcionLocalidad, s => s.Oferta.Localidad.Nombre)
                 .Map(d => d.DescripcionProvincia, s => s.Oferta.Localidad.Provincia.Nombre)
                 .Map(d => d.DescripcionPais, s => s.Oferta.Localidad.Provincia.Pais.Nombre);
+
+            TypeAdapterConfig<EstadoValidacion, EstadoValidacionDTO>
+                         .NewConfig()
+
+                         .Map(d => d.Descripcion, s => s.Nombre);
+                   TypeAdapterConfig<Carrera, CarreraDTO>
+                .NewConfig()
+             
+                .Map(d => d.Descripcion, s => s.Nombre);
+
 
         }
     }

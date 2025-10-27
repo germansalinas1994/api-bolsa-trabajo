@@ -303,5 +303,29 @@ namespace BussinessLogic.Services
                 throw new ApiException($"Error al obtener ID de perfil: {ex.Message}", (int)HttpStatusCode.InternalServerError);
             }
         }
+
+        public async Task<IList<EstadoValidacionDTO>> GetAllEstadosValidacion()
+        {
+            try
+            {
+                List<EstadoValidacion> estadosValidacion = (await _unitOfWork.GenericRepository<EstadoValidacion>()
+                    .GetAll()
+
+                    ).ToList();
+
+                return estadosValidacion.Adapt<List<EstadoValidacionDTO>>();
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+
+        }
     }
 }

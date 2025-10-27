@@ -183,6 +183,29 @@ namespace API_Client.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("get_estados_validacion")]
+        public async Task<ApiResponse> GetAllEstadosValidacion()
+        {
+            try
+            {
+                IList<EstadoValidacionDTO> estadosValidacion = await _service.GetAllEstadosValidacion();
+                return new ApiResponse("Operación exitosa", estadosValidacion);
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
+                throw new ApiException(ex);
+            }
+        }
+
         [HttpPost]
         [Route("cargar_usuario")]
         public async Task<ApiResponse> CargarUsuario()

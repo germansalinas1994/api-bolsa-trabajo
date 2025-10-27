@@ -238,6 +238,8 @@ namespace BussinessLogic.Services
                     search = search.Where(o => idsTiposContrato.Contains(o.IdTipoContrato));
                 }
 
+                search = search.Where(o => o.PerfilEmpresa.FechaBaja == null && o.PerfilEmpresa.IdEstadoValidacion == EstadoValidacion.IdEstadoAprobada);
+
                 List<Oferta> oferta = search
                     .Include(pe => pe.PerfilEmpresa)
                         .ThenInclude(u => u.Usuario)

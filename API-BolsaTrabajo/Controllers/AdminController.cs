@@ -17,14 +17,14 @@ public class AdminController : GenericController
         _service = service;
     }
 
-    [HttpGet]
+    [HttpPost]
     [Route("get_empresas_por_verificar")]
-    public async Task<ApiResponse> GetEmpresasPorVerificar()
+    public async Task<ApiResponse> GetEmpresasPorVerificar([FromBody] GenericSearchDTO filtros)
     {
         try
         {
             int idUsuario = await GetIdUsuarioFromJWT();
-            List<PerfilEmpresaDTO> empresas = await _service.GetEmpresasPorVerificar(idUsuario);
+            List<PerfilEmpresaDTO> empresas = await _service.GetEmpresasPorVerificar(idUsuario, filtros);
             return new ApiResponse(empresas);
         }
         catch (ApiException e)
@@ -37,5 +37,35 @@ public class AdminController : GenericController
         }
     }
 
+    [HttpPost]
+    [Route("cambiar_estado_validacion")]
+    public async Task<ApiResponse> CambiarEstadoValidacion([FromBody] CambioEstadoValidacionDTO body)
+    {
+        try
+        {
+            int idUsuario = await GetIdUsuarioFromJWT();
 
+            await _service.CambiarEstadoValidacion(body.IdPerfilEmpresa, body.Aprobado, idUsuario);
+
+            return new ApiResponse("Operación realizada con éxito", (int)HttpStatusCode.OK);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+
+
+
+
+}
+
+public class CambioEstadoValidacionDTO
+{
+    public int IdPerfilEmpresa { get; set; }
+    public bool Aprobado { get; set; }
 }
