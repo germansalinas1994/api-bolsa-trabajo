@@ -228,5 +228,80 @@ namespace BussinessLogic.Services
                 throw new ApiException($"Error al obtener perfil de empresa: {ex.Message}", (int)HttpStatusCode.InternalServerError);
             }
         }
+
+        public async Task<int> GetIdUsuarioFromEmail(string email)
+        {
+            try
+            {
+                var usuario = (await _unitOfWork.GenericRepository<Usuario>()
+                    .GetByCriteria(u => u.Email == email && u.FechaBaja == null && u.Activo == true))
+                    .FirstOrDefault();
+
+                if (usuario == null)
+                    throw new ApiException("Usuario no encontrado", (int)HttpStatusCode.NotFound);
+
+                return usuario.Id;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Error al obtener ID de usuario: {ex.Message}", (int)HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<int> GetIdPerfilFromEmail(string email)
+        {
+            try
+            {
+                var usuario = (await _unitOfWork.GenericRepository<Usuario>()
+                    .GetByCriteria(u => u.Email == email && u.FechaBaja == null && u.Activo == true))
+                    .FirstOrDefault();
+
+                if (usuario == null)
+                    throw new ApiException("Usuario no encontrado", (int)HttpStatusCode.NotFound);
+
+                int idPerfil = 0;
+
+                if (usuario.IdRol == Rol.IdRolCandidato)
+                {
+                    var perfilCandidato = (await _unitOfWork.GenericRepository<PerfilCandidato>()
+                        .GetByCriteria(pc => pc.IdUsuario == usuario.Id && pc.FechaBaja == null))
+                        .FirstOrDefault();
+
+                    if (perfilCandidato == null)
+                        throw new ApiException("El usuario no tiene un perfil de candidato asociado", (int)HttpStatusCode.NotFound);
+
+                    idPerfil = perfilCandidato.Id;
+                }
+                else if (usuario.IdRol == Rol.IdRolEmpresa)
+                {
+                    var perfilEmpresa = (await _unitOfWork.GenericRepository<PerfilEmpresa>()
+                        .GetByCriteria(pe => pe.IdUsuario == usuario.Id && pe.FechaBaja == null))
+                        .FirstOrDefault();
+
+                    if (perfilEmpresa == null)
+                        throw new ApiException("El usuario no tiene un perfil de empresa asociado", (int)HttpStatusCode.NotFound);
+
+                    idPerfil = perfilEmpresa.Id;
+                }
+                else
+                {
+                    throw new ApiException("El usuario no tiene un rol válido para obtener un perfil", (int)HttpStatusCode.BadRequest);
+                }
+
+                return idPerfil;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Error al obtener ID de perfil: {ex.Message}", (int)HttpStatusCode.InternalServerError);
+            }
+        }
     }
 }

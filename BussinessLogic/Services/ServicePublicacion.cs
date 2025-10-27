@@ -65,7 +65,7 @@ namespace BussinessLogic.Services
                         .ThenInclude(p => p.Provincia)
                         .ThenInclude(p => p.Pais)
                     )
-                ).ToList();
+                ).OrderByDescending(p => p.FechaModificacion).ToList();
 
                 return ofertas.Adapt<List<OfertaDTO>>();
             }
@@ -246,7 +246,7 @@ namespace BussinessLogic.Services
                     .Include(l => l.Localidad)
                         .ThenInclude(p => p.Provincia)
                             .ThenInclude(p => p.Pais)
-                    .ToList();
+                    .OrderByDescending(o => o.FechaModificacion).ToList();
 
                 return oferta.Adapt<List<OfertaDTO>>();
             }
@@ -311,7 +311,7 @@ namespace BussinessLogic.Services
                 .Include(m => m.Modalidad)
                 .Include(e => e.PerfilEmpresa)
 
-            )).Where(f => f.FechaBaja == null).OrderByDescending(f => f.FechaAlta).ToList();
+            )).Where(f => f.FechaBaja == null).OrderByDescending(f => f.FechaModificacion).ToList();
                 // int cantidad = o.Count;
                 ofertaReciente.Ofertas = o.Adapt<List<OfertaDTO>>().ToList(); //mapeo a DTO y tomo los primeros 'limit' elementos
                 ofertaReciente.CantidadOfertas = o.Count;
@@ -410,7 +410,7 @@ namespace BussinessLogic.Services
                             .Include(p => p.PerfilCandidato)
                                 .ThenInclude(pc => pc.Usuario)
                     ))
-                    .ToList();
+                    .OrderByDescending(p => p.FechaModificacion).ToList();
 
                 // 3️⃣ Proyectamos a DTO
                 var result = postulaciones.Select(p => new PostulacionDTO

@@ -72,18 +72,7 @@ namespace API_Client.Controllers
             catch (Exception ex) { throw ex; }
         }
 
-        //    [HttpGet("get_publicaciones_por-carrera/{idCarrera}")]
-        //      public async Task<IActionResult> GetPorCarrera([FromRoute] int idCarrera, CancellationToken ct = default)
-        //     {
-        //             try
-        //             {
-        //                 if (idCarrera <= 0) return BadRequest(new ApiResponse("El parámetro 'idCarrera' debe ser mayor a 0."));
-        //                 IList<OfertaDTO> data = await _service.GetPorCarreraAsync(idCarrera, ct);
-        //                 return Ok(data);
-        //             }
-        //             catch (ApiException) { throw; }
-        //             catch (System.Exception ex) { throw new ApiException(ex); }
-        //     }
+
 
         /// <summary>
         /// Devuelve todas las publicaciones de una empresa según su email.

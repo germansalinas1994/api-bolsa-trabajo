@@ -226,5 +226,41 @@ namespace API_Client.Controllers
                 throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
             }
         }
+
+        public async Task<int> GetIdUsuarioFromJWT()
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                int idUsuario = await _service.GetIdUsuarioFromEmail(email);
+                return idUsuario;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+            }
+        }
+
+        public async Task<int> GetIdPerfilFromJWT()
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                int idPerfil = await _service.GetIdPerfilFromEmail(email);
+                return idPerfil;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+            }
+        }
     }
 }

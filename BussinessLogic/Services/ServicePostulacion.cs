@@ -136,7 +136,7 @@ namespace BussinessLogic.Services
                                 .ThenInclude(h => h.EstadoPostulacion)
                             .Include(p => p.PerfilCandidato)
 
-                    )).ToList();
+                    )).OrderByDescending(f=> f.FechaModificacion).ToList();
 
 
                 return postulaciones.Adapt<List<PostulacionDTO>>();
@@ -227,7 +227,7 @@ namespace BussinessLogic.Services
                 ctx.Parameters["Estados"] = estados;
 
                 var result = postulaciones
-                .OrderByDescending(p => p.FechaAlta)
+                .OrderByDescending(p => p.FechaModificacion)
                 .ToList()
                 .BuildAdapter()                           // <-- crea el adaptador para esta conversión
                 .AddParameters("Estados", estados)        // <-- pasa parámetros al mapeo (MapContext.Parameters)
@@ -266,7 +266,7 @@ namespace BussinessLogic.Services
                     FechaPostulacion = p.FechaAlta.ToString("yyyy-MM-dd"),
                     TituloOferta = p.Oferta?.Titulo,
                     NombreEmpresa = p.Oferta?.PerfilEmpresa?.RazonSocial
-                }).ToList();
+                }).OrderByDescending(p => p.FechaPostulacion).ToList();
 
                 return resultado;
             }
