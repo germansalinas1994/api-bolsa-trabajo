@@ -227,7 +227,7 @@ namespace API_Client.Controllers
             }
         }
 
-        public async Task<int> GetIdUsuarioFromJWT()
+        protected async Task<int> GetIdUsuarioFromJWT()
         {
             try
             {
@@ -236,7 +236,7 @@ namespace API_Client.Controllers
                 return idUsuario;
             }
             catch (ApiException)
-            {
+            {   
                 throw;
             }
             catch (Exception ex)
@@ -245,7 +245,7 @@ namespace API_Client.Controllers
             }
         }
 
-        public async Task<int> GetIdPerfilFromJWT()
+        protected async Task<int> GetIdPerfilFromJWT()
         {
             try
             {

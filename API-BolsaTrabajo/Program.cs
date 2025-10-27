@@ -90,6 +90,7 @@ builder.Services.AddScoped<ServicePublicacion>();
 builder.Services.AddScoped<ServicePostulacion>();
 builder.Services.AddScoped<ServiceCandidato>();
 builder.Services.AddScoped<ServiceEmpresa>();
+builder.Services.AddScoped<ServiceAdmin>();
 
 
 
