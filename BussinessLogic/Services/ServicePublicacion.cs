@@ -86,8 +86,14 @@ namespace BussinessLogic.Services
                 Usuario usuario = (await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(e=>e.Email == email)).FirstOrDefault();
                 if (usuario == null)
                     throw new ApiException("no existe el usuario", (int)HttpStatusCode.NotFound);
-                
-                PerfilEmpresa perfil = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(u=>u.IdUsuario == usuario.Id)).FirstOrDefault();
+
+                PerfilEmpresa perfil = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(u => u.IdUsuario == usuario.Id)).FirstOrDefault();
+                if(perfil.IdEstadoValidacion != EstadoValidacion.IdEstadoAprobada)
+                {
+                    throw new ApiException("El perfil de la empresa no está aprobado para crear ofertas.", (int)HttpStatusCode.Forbidden);
+                }
+             
+             
                 if (perfil == null)
                 {
                     // Auto-crear perfil de empresa si no existe
