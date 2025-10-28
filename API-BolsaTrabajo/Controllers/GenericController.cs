@@ -259,7 +259,7 @@ namespace API_Client.Controllers
                 return idUsuario;
             }
             catch (ApiException)
-            {   
+            {
                 throw;
             }
             catch (Exception ex)
@@ -275,6 +275,26 @@ namespace API_Client.Controllers
                 string email = UserEmailFromJWT();
                 int idPerfil = await _service.GetIdPerfilFromEmail(email);
                 return idPerfil;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("get_roles")]
+        public async Task<ApiResponse> GetRoles()
+        {
+            try
+            {
+                IList<RolDTO> roles = await _service.GetAllRoles();
+                roles.Insert(0, new RolDTO { Id = 0, Nombre = "Todos" });
+                return new ApiResponse("Operación exitosa", roles);
             }
             catch (ApiException)
             {

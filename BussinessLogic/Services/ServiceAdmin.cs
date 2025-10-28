@@ -14,6 +14,137 @@ namespace BussinessLogic.Services
     {
         public ServiceAdmin(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
+        public async Task AltaUsuario(int idUsuarioAlta, int idUsuario)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                Usuario usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(idUsuario);
+
+                if (usuario == null)
+                {
+                    throw new ApiException("Usuario no encontrado", 404);
+                }
+
+                if (usuario.IdRol != Rol.IdRolAdmin)
+                {
+                    throw new ApiException("Acceso denegado. El usuario no es administrador.", 403);
+                }
+
+                Usuario usuarioAlta = await _unitOfWork.GenericRepository<Usuario>().GetById(idUsuarioAlta);
+                if (usuarioAlta == null)
+                {
+                    throw new ApiException("Usuario a dar de alta no encontrado", 404);
+                }
+                usuarioAlta.FechaBaja = null;
+                usuarioAlta.FechaModificacion = DateTime.UtcNow;
+                usuarioAlta.Activo = true;
+                await _unitOfWork.GenericRepository<Usuario>().Update(usuarioAlta);
+
+                if (usuarioAlta.IdRol == Rol.IdRolEmpresa)
+                {
+                    //busco el perfil que tiene de acuerdo al rol que tenia
+                    var perfilEmpresa = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(pe => pe.IdUsuario == usuarioAlta.Id)).FirstOrDefault();
+                    if (perfilEmpresa != null)
+                    {
+                        perfilEmpresa.FechaBaja = null;
+                        perfilEmpresa.FechaModificacion = DateTime.UtcNow;
+                        perfilEmpresa.IdEstadoValidacion = EstadoValidacion.IdEstadoIniciada;
+                        await _unitOfWork.GenericRepository<PerfilEmpresa>().Update(perfilEmpresa);
+                    }
+                }
+                else if (usuarioAlta.IdRol == Rol.IdRolCandidato)
+                {
+                    var perfilCandidato = (await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteria(pe => pe.IdUsuario == usuarioAlta.Id)).FirstOrDefault();
+                    if (perfilCandidato != null)
+                    {
+                        perfilCandidato.FechaBaja = null;
+                        perfilCandidato.FechaModificacion = DateTime.UtcNow;
+                        await _unitOfWork.GenericRepository<PerfilCandidato>().Update(perfilCandidato);
+                    }
+                }
+
+                await _unitOfWork.CommitAsync();
+
+            }
+            catch (ApiException ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw new ApiException("Error al cambiar el estado de validación", 500, ex.Message);
+            }
+        }
+
+        public async Task BajaUsuario(int idUsuarioBaja, int idUsuario)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                Usuario usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(idUsuario);
+
+                if (usuario == null)
+                {
+                    throw new ApiException("Usuario no encontrado", 404);
+                }
+
+                if (usuario.IdRol != Rol.IdRolAdmin)
+                {
+                    throw new ApiException("Acceso denegado. El usuario no es administrador.", 403);
+                }
+
+                Usuario usuarioBaja = await _unitOfWork.GenericRepository<Usuario>().GetById(idUsuarioBaja);
+                if (usuarioBaja == null)
+                {
+                    throw new ApiException("Usuario a dar de baja no encontrado", 404);
+                }
+
+                usuarioBaja.FechaBaja = DateTime.UtcNow;
+                usuarioBaja.FechaModificacion = DateTime.UtcNow;
+                usuarioBaja.Activo = false;
+                await _unitOfWork.GenericRepository<Usuario>().Update(usuarioBaja);
+
+                //busco el perfil que tiene de acuerdo al rol que tenia
+                if (usuarioBaja.IdRol == Rol.IdRolEmpresa)
+                {
+                    var perfilEmpresa = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(pe => pe.IdUsuario == usuarioBaja.Id)).FirstOrDefault();
+                    if (perfilEmpresa != null)
+                    {
+                        perfilEmpresa.FechaBaja = DateTime.UtcNow;
+                        perfilEmpresa.FechaModificacion = DateTime.UtcNow;
+                        perfilEmpresa.IdEstadoValidacion = EstadoValidacion.IdEstadoRechazada;
+
+                        await _unitOfWork.GenericRepository<PerfilEmpresa>().Update(perfilEmpresa);
+                    }
+                }
+                else if (usuarioBaja.IdRol == Rol.IdRolCandidato)
+                {
+                    var perfilCandidato = (await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteria(pe => pe.IdUsuario == usuarioBaja.Id)).FirstOrDefault();
+                    if (perfilCandidato != null)
+                    {
+                        perfilCandidato.FechaBaja = DateTime.UtcNow;
+                        await _unitOfWork.GenericRepository<PerfilCandidato>().Update(perfilCandidato);
+                    }
+                }
+                await _unitOfWork.CommitAsync();
+            }
+            catch (ApiException ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw new ApiException("Error al cambiar el estado de validación", 500, ex.Message);
+            }
+        }
+
         public async Task CambiarEstadoValidacion(int idPerfilEmpresa, bool aprobado, int idUsuario)
         {
             try
@@ -106,10 +237,6 @@ namespace BussinessLogic.Services
         {
             try
             {
-
-
-
-
                 // Verificar que el usuario es admin
                 var usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(idUsuario);
                 if (usuario == null)
@@ -155,6 +282,33 @@ namespace BussinessLogic.Services
             catch (Exception ex)
             {
                 throw new ApiException("Error al obtener las empresas por verificar", 500, ex.Message);
+            }
+        }
+
+        public async Task<List<UsuarioDTO>> GetUsuarios()
+        {
+            try
+            {
+                var search = await _unitOfWork.GenericRepository<Usuario>().Search();
+
+                // search = search.Where(u => u.FechaBaja == null);
+
+                List<Usuario> usuarios = search
+                                .Include(u => u.Rol)
+                                .OrderBy(u => u.Nombre).ToList();
+
+
+                List<UsuarioDTO> usuariosDTO = usuarios.Adapt<List<UsuarioDTO>>();
+
+                return usuariosDTO;
+            }
+            catch (ApiException ex)
+            {
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException("Error al obtener los usuarios", 500, ex.Message);
             }
         }
     }

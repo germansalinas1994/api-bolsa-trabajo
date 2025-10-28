@@ -59,6 +59,67 @@ public class AdminController : GenericController
         }
     }
 
+    [HttpGet]
+    [Route("get_usuarios")]
+    public async Task<ApiResponse> GetUsuarios()
+    {
+        try
+        {
+            List<UsuarioDTO> usuarios = await _service.GetUsuarios();
+            return new ApiResponse(usuarios);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+
+    [HttpPost]
+    [Route("baja_usuario")]
+    public async Task<ApiResponse> BajaUsuario([FromBody] int idUsuario)
+    {
+        try
+        {
+            int idAdmin = await GetIdUsuarioFromJWT();
+            await _service.BajaUsuario(idUsuario, idAdmin);
+
+            return new ApiResponse("Operación realizada con éxito", (int)HttpStatusCode.OK);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+
+     [HttpPost]
+    [Route("alta_usuario")]
+    public async Task<ApiResponse> AltaUsuario([FromBody] int idUsuarioAlta)
+    {
+        try
+        {
+            int idUsuario = await GetIdUsuarioFromJWT();
+            await _service.AltaUsuario(idUsuarioAlta, idUsuario);
+
+            return new ApiResponse("Operación realizada con éxito", (int)HttpStatusCode.OK);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+
 
 
 

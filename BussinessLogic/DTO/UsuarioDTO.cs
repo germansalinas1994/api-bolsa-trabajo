@@ -11,6 +11,14 @@ namespace BussinessLogic.DTO
         public string? Nombre { get; set; }
         public int? IdRol { get; set; }
 
+        public string? Activo { get; set; }
+
+        public string? FechaAlta { get; set; }
+        public string? FechaBaja { get; set; }
+
+        public string?  RolNombre { get; set; }
+        
+
 
 
     }

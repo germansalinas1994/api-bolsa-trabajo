@@ -81,10 +81,17 @@ namespace BussinessLogic.DTO
                          .NewConfig()
 
                          .Map(d => d.Descripcion, s => s.Nombre);
-                   TypeAdapterConfig<Carrera, CarreraDTO>
+            TypeAdapterConfig<Carrera, CarreraDTO>
                 .NewConfig()
-             
                 .Map(d => d.Descripcion, s => s.Nombre);
+
+           TypeAdapterConfig<Usuario, UsuarioDTO>
+                .NewConfig()
+                .Map(d => d.RolNombre, s => s.Rol != null ? s.Rol.Nombre : null)
+                .Map(d => d.FechaAlta, s => s.FechaAlta.ToShortDateString().ToString())
+                .Map(d => d.FechaBaja, s => s.FechaBaja != null ? s.FechaBaja.Value.ToShortDateString().ToString() : null)
+                .Map(d => d.Activo, s => s.Activo != null ? (bool)s.Activo ? "Sí" : "No" : "No")
+                ;
 
 
         }

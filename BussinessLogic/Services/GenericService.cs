@@ -327,5 +327,28 @@ namespace BussinessLogic.Services
             }
 
         }
+
+        public async Task<IList<RolDTO>> GetAllRoles()
+        {
+            try
+            {
+                List<Rol> roles = (await _unitOfWork.GenericRepository<Rol>()
+                    .GetAll()
+
+                    ).ToList();
+
+                return roles.Adapt<List<RolDTO>>();
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el controller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones en caso de error
+                throw new ApiException(ex);
+            }
+        }
     }
 }
