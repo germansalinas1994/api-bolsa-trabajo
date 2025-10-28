@@ -10,6 +10,7 @@ using DataAccess.Entities;
 using System.Net;
 
 
+
 namespace API_Client.Controllers
 {
     [Route("api/[controller]")]
@@ -130,6 +131,32 @@ namespace API_Client.Controllers
             }
             catch (ApiException) { throw; }
             catch (Exception ex) { throw new ApiException(ex); }
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<PostulacionDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        [Route("get_candidatos_by_postulaciones")]
+        public async Task<ApiResponse> GetCandidatosByPostulaciones()
+        {
+            try
+            {
+                string emailEmpresa = UserEmailFromJWT(); // Igual que en tu ejemplo
+                IList<PerfilCandidatoDTO> candidatos = await _service.GetCandidatosByPostulaciones(emailEmpresa);
+                return new ApiResponse("Operación exitosa", candidatos);
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex);
+            }
         }
     }
 }

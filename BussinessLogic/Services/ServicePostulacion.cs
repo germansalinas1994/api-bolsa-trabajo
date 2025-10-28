@@ -238,7 +238,7 @@ namespace BussinessLogic.Services
             catch (ApiException) { throw; }
             catch (Exception ex) { throw new ApiException(ex); }
         }
-        
+
         public async Task<IList<PostulacionDTO>> GetPostulacionesPorOferta(int idOferta)
         {
             try
@@ -276,5 +276,62 @@ namespace BussinessLogic.Services
                 throw new Exception($"Error al obtener postulaciones de la oferta: {ex.Message}", ex);
             }
         }
+        
+        public async Task<IList<PerfilCandidatoDTO>> GetCandidatosByPostulaciones(string emailEmpresa)
+        {
+             // 1️⃣ Buscar el usuario empresa
+            var usuarioEmpresa = (await _unitOfWork.GenericRepository<Usuario>()
+                .GetByCriteria(u => u.Email == emailEmpresa && u.FechaBaja == null))
+                .FirstOrDefault();
+
+            if (usuarioEmpresa == null)
+                throw new ApiException("El usuario no existe", (int)HttpStatusCode.NotFound);
+
+
+            // 2️⃣ Traer todas las postulaciones de las ofertas de esa empresa
+            var postulaciones = (await _unitOfWork.GenericRepository<Postulacion>()
+                .GetByCriteriaIncludingSpecificRelations(
+                    p => p.Oferta.PerfilEmpresa.IdUsuario == usuarioEmpresa.Id && p.FechaBaja == null,
+                    q => q
+                        .Include(p => p.PerfilCandidato)
+                            .ThenInclude(pc => pc.Usuario)
+                        .Include(p => p.PerfilCandidato)
+                            .ThenInclude(pc => pc.Carrera)
+                        .Include(p => p.PerfilCandidato)
+                            .ThenInclude(pc => pc.Genero)
+                        .Include(p => p.Oferta)
+                )).ToList();
+                
+            var candidatos = postulaciones
+                .Select(p => p.PerfilCandidato)
+                    .ThenInclude(pc => pc.Usuario)
+                    
+                .Where(c => c != null)
+                .Distinct()
+                .ToList();
+
+                // 3️⃣ Mapearlos al DTO
+            var resultado = candidatos.Select(c => new PerfilCandidatoDTO
+            {
+                Id = c.Id,
+                Descripcion = c.Descripcion,
+                IdUsuario = c.IdUsuario,
+                IdGenero = c.IdGenero,
+                IdCarrera = c.IdCarrera,
+                Legajo = c.Legajo,
+                AnioEgreso = c.AnioEgreso,
+                Cv = c.Cv != null ? Convert.ToBase64String(c.Cv) : null,
+                FechaAlta = c.FechaAlta,
+                FechaModificacion = c.FechaModificacion,
+                FechaBaja = c.FechaBaja,
+                GeneroNombre = c.Genero?.Nombre,
+                CarreraNombre = c.Carrera?.Nombre,
+                Nombre = c.Usuario?.Nombre,
+                Email = c.Usuario?.Email
+            }).ToList();
+
+            return resultado;
+        }
+
     }
 }
