@@ -38,8 +38,9 @@ namespace API_Client.Controllers
         {
             try
             {
+                int IdPerfilCandidato = await GetIdPerfilFromJWT();
                 // IList<OfertaDTO> ofertas = await _service.GetAllPublicaciones();
-                IList<OfertaDTO> ofertas = await _service.GetPublicaciones(filtro);
+                IList<OfertaDTO> ofertas = await _service.GetPublicaciones(filtro,IdPerfilCandidato);
                 return new ApiResponse("Operación exitosa", ofertas);
             }
             catch (ApiException)

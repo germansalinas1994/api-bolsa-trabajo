@@ -122,7 +122,12 @@ namespace BussinessLogic.Services
                 List<Postulacion> postulaciones = (await _unitOfWork
                     .GenericRepository<Postulacion>()
                     .GetByCriteriaIncludingSpecificRelations(
-                        x => x.IdPerfilCandidato == idPerfil,
+                        x => x.IdPerfilCandidato == idPerfil && x.FechaBaja == null &&
+                        x.Oferta.FechaBaja == null &&
+                        x.Oferta.PerfilEmpresa.FechaBaja == null &&
+                        x.Oferta.FechaInicio <= DateTime.Now &&
+                        (x.Oferta.FechaFin == null || x.Oferta.FechaFin >= DateTime.Now) &&
+                        x.Oferta.PerfilEmpresa.IdEstadoValidacion == EstadoValidacion.IdEstadoAprobada,
                         q => q
                             .Include(p => p.Oferta)
                             .ThenInclude(to => to.TipoContrato)
