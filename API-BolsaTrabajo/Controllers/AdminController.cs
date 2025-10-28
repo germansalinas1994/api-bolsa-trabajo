@@ -99,7 +99,7 @@ public class AdminController : GenericController
         }
     }
 
-     [HttpPost]
+    [HttpPost]
     [Route("alta_usuario")]
     public async Task<ApiResponse> AltaUsuario([FromBody] int idUsuarioAlta)
     {
@@ -120,7 +120,24 @@ public class AdminController : GenericController
         }
     }
 
-
+    [HttpPost]
+    [Route("ver_detalle_usuario")]
+    public async Task<ApiResponse> VerDetalleUsuario([FromBody] int idUsuarioRegistrado)
+    {
+        try
+        {
+            PerfilCompletoDTO perfilCompleto = await _service.VerDetalleUsuario(idUsuarioRegistrado);
+            return new ApiResponse(perfilCompleto);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
 
 
 }
@@ -129,4 +146,10 @@ public class CambioEstadoValidacionDTO
 {
     public int IdPerfilEmpresa { get; set; }
     public bool Aprobado { get; set; }
+}
+
+public class ActualizarRolUsuarioDTO
+{
+    public int IdUsuario { get; set; }
+    public int idRol { get; set; }
 }

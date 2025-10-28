@@ -293,7 +293,6 @@ namespace API_Client.Controllers
             try
             {
                 IList<RolDTO> roles = await _service.GetAllRoles();
-                roles.Insert(0, new RolDTO { Id = 0, Nombre = "Todos" });
                 return new ApiResponse("Operación exitosa", roles);
             }
             catch (ApiException)

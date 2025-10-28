@@ -14,6 +14,8 @@ namespace BussinessLogic.Services
     {
         public ServiceAdmin(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
+     
+
         public async Task AltaUsuario(int idUsuarioAlta, int idUsuario)
         {
             try
@@ -311,5 +313,58 @@ namespace BussinessLogic.Services
                 throw new ApiException("Error al obtener los usuarios", 500, ex.Message);
             }
         }
+
+        public async Task<PerfilCompletoDTO> VerDetalleUsuario(int idUsuarioRegistrado)
+        {
+            try
+            {
+                var perfilCompleto = new PerfilCompletoDTO();
+                var usuario = await _unitOfWork.GenericRepository<Usuario>().GetByIdIncludingRelations(idUsuarioRegistrado);
+
+                if (usuario == null)
+                {
+                    throw new ApiException("Usuario no encontrado", 404);
+                }
+
+                //obtengo el perfil segun el rol
+                if (usuario.IdRol == Rol.IdRolCandidato)
+                {
+                    var perfilCandidato = (await _unitOfWork.GenericRepository<PerfilCandidato>().GetByCriteriaIncludingRelations(pe => pe.IdUsuario == usuario.Id)).FirstOrDefault();
+                    if (perfilCandidato == null)
+                    {
+                        throw new ApiException("Perfil de candidato no encontrado", (int)HttpStatusCode.NotFound);
+                    }
+
+                    perfilCompleto = perfilCandidato.Adapt<PerfilCompletoDTO>();
+                }
+                else if (usuario.IdRol == Rol.IdRolEmpresa)
+                {
+                    var perfilEmpresa = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteriaIncludingRelations(pe => pe.IdUsuario == usuario.Id)).FirstOrDefault();
+                    if (perfilEmpresa == null)
+                    {
+                        throw new ApiException("Perfil de empresa no encontrado", (int)HttpStatusCode.NotFound);
+                    }
+                    perfilCompleto = perfilEmpresa.Adapt<PerfilCompletoDTO>();
+                }
+                else
+                {
+                    perfilCompleto = usuario.Adapt<PerfilCompletoDTO>();
+                }
+
+
+                return perfilCompleto;
+
+            }
+            catch (ApiException ex)
+            {
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException("Error al obtener los usuarios", 500, ex.Message);
+            }
+        }
+        
+
     }
 }
