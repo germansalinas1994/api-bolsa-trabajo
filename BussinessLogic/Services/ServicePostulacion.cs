@@ -304,8 +304,6 @@ namespace BussinessLogic.Services
                 
             var candidatos = postulaciones
                 .Select(p => p.PerfilCandidato)
-                    .ThenInclude(pc => pc.Usuario)
-                    
                 .Where(c => c != null)
                 .Distinct()
                 .ToList();
