@@ -74,6 +74,7 @@ namespace BussinessLogic.Services
                     perfilDTO.Email = usuario.Email;
                     perfilDTO.UsuarioActivo = usuario.Activo;
                     perfilDTO.IdRol = usuario.IdRol;
+                    perfilDTO.FotoPerfil = usuario.FotoPerfil; // Agregar foto de perfil
                 }
                 
                 // Agregar información del género (según diagrama)
@@ -164,6 +165,7 @@ namespace BussinessLogic.Services
                 {
                     perfilDTO.Nombre = usuario.Nombre;
                     perfilDTO.Email = usuario.Email;
+                    perfilDTO.FotoPerfil = usuario.FotoPerfil; // Agregar foto de perfil
                 }
                 
                 // Agregar información del género
@@ -232,15 +234,22 @@ namespace BussinessLogic.Services
                     perfilExistente.Cv = Convert.FromBase64String(perfilDTO.Cv);
                 }
 
-                // Si se proporciona un nombre, actualizar el nombre del usuario
-                if (!string.IsNullOrEmpty(perfilDTO.Nombre))
+                // Si se proporciona un nombre o foto de perfil, actualizar el usuario
+                if (!string.IsNullOrEmpty(perfilDTO.Nombre) || !string.IsNullOrEmpty(perfilDTO.FotoPerfil))
                 {
                     var usuarios = await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(u => u.Id == perfilExistente.IdUsuario && u.FechaBaja == null);
                     var usuario = usuarios.FirstOrDefault();
                     
                     if (usuario != null)
                     {
-                        usuario.Nombre = perfilDTO.Nombre;
+                        if (!string.IsNullOrEmpty(perfilDTO.Nombre))
+                        {
+                            usuario.Nombre = perfilDTO.Nombre;
+                        }
+                        if (!string.IsNullOrEmpty(perfilDTO.FotoPerfil))
+                        {
+                            usuario.FotoPerfil = perfilDTO.FotoPerfil;
+                        }
                         await _unitOfWork.GenericRepository<Usuario>().Update(usuario);
                     }
                 }

@@ -21,6 +21,7 @@ namespace BussinessLogic.DTO
         public string? Email { get; set; }
         public bool? UsuarioActivo { get; set; }
         public int? IdRol { get; set; }
+        public string? FotoPerfil { get; set; }
         
         // Campos derivados del Genero (según diagrama)
         public string? GeneroNombre { get; set; }

@@ -38,6 +38,8 @@ namespace BussinessLogic.DTO
         //datos para postularse
         public string? CartaPresentacion { get; set; }
         public string? Observacion { get; set; }
+
+        public bool? PuedePostularse { get; set; } = true;
     }
 }
 

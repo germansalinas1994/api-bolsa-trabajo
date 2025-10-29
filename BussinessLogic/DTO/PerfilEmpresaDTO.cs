@@ -18,6 +18,7 @@ public class PerfilEmpresaDTO
     public string? Email { get; set; }
     public bool? UsuarioActivo { get; set; }
     public int? IdRol { get; set; }
+    public string? FotoPerfil { get; set; }
 
     // Derivados/relacionados desde Rol
     public string? RolNombre { get; set; }

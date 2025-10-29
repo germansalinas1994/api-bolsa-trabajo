@@ -183,6 +183,29 @@ namespace API_Client.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("get_estados_validacion")]
+        public async Task<ApiResponse> GetAllEstadosValidacion()
+        {
+            try
+            {
+                IList<EstadoValidacionDTO> estadosValidacion = await _service.GetAllEstadosValidacion();
+                return new ApiResponse("Operación exitosa", estadosValidacion);
+            }
+            catch (ApiException)
+            {
+                //lanzo la excepcion que se captura en el service
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Manejo de excepciones
+                // throw new ApiException("Mensaje de error que quiero enviar", (int)HttpStatusCode.Unauthorized, ex.Message);
+
+                throw new ApiException(ex);
+            }
+        }
+
         [HttpPost]
         [Route("cargar_usuario")]
         public async Task<ApiResponse> CargarUsuario()
@@ -216,6 +239,61 @@ namespace API_Client.Controllers
                 string email = UserEmailFromJWT();
                 int idPerfilEmpresa = await _service.GetPerfilEmpresaUsuario(email);
                 return new ApiResponse("Operación exitosa", new { idPerfilEmpresa });
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+            }
+        }
+
+        protected async Task<int> GetIdUsuarioFromJWT()
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                int idUsuario = await _service.GetIdUsuarioFromEmail(email);
+                return idUsuario;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+            }
+        }
+
+        protected async Task<int> GetIdPerfilFromJWT()
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                int idPerfil = await _service.GetIdPerfilFromEmail(email);
+                return idPerfil;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("get_roles")]
+        public async Task<ApiResponse> GetRoles()
+        {
+            try
+            {
+                IList<RolDTO> roles = await _service.GetAllRoles();
+                return new ApiResponse("Operación exitosa", roles);
             }
             catch (ApiException)
             {
