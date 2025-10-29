@@ -140,13 +140,13 @@ namespace API_Client.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
-        [Route("get_candidatos_by_postulaciones")]
-        public async Task<ApiResponse> GetCandidatosByPostulaciones()
+        [Route("get_postulaciones_candidatos_empresa")]
+        public async Task<ApiResponse> GetPostulacionesCandidatosEmpresa()
         {
             try
             {
                 string emailEmpresa = UserEmailFromJWT(); // Igual que en tu ejemplo
-                IList<PerfilCandidatoDTO> candidatos = await _service.GetCandidatosByPostulaciones(emailEmpresa);
+                IList<PostulacionCandidatoDTO> candidatos = await _service.GetPostulacionesCandidatosEmpresa(emailEmpresa);
                 return new ApiResponse("Operación exitosa", candidatos);
             }
             catch (ApiException)
