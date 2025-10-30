@@ -189,4 +189,65 @@ public class CandidatoController : GenericController
             throw new ApiException(ex);
         }
     }
+
+    [HttpPost]
+    [Route("upload_foto_perfil")]
+    public async Task<ApiResponse> UploadFotoPerfil([FromForm] IFormFile foto, [FromQuery] int perfilId = 2)
+    {
+        try
+        {
+            if (foto == null || foto.Length == 0)
+            {
+                throw new ApiException("Archivo de foto requerido", (int)HttpStatusCode.BadRequest);
+            }
+
+            // Validar tipo de archivo - solo imágenes
+            var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp" };
+            if (!allowedTypes.Contains(foto.ContentType.ToLowerInvariant()))
+            {
+                throw new ApiException("Tipo de archivo no válido. Solo se permiten imágenes (JPG, PNG, GIF, WEBP)", (int)HttpStatusCode.BadRequest);
+            }
+
+            // Validar extensión del archivo
+            var fileExtension = Path.GetExtension(foto.FileName).ToLowerInvariant();
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                throw new ApiException("Extensión de archivo no válida. Solo se permiten .jpg, .jpeg, .png, .gif, .webp", (int)HttpStatusCode.BadRequest);
+            }
+
+            // Validar tamaño del archivo (máximo 2MB)
+            const long maxFileSize = 2 * 1024 * 1024; // 2MB
+            if (foto.Length > maxFileSize)
+            {
+                throw new ApiException("El archivo es demasiado grande. El tamaño máximo permitido es 2MB", (int)HttpStatusCode.BadRequest);
+            }
+
+            // Convertir archivo a byte array
+            byte[] fotoBytes;
+            using (var memoryStream = new MemoryStream())
+            {
+                await foto.CopyToAsync(memoryStream);
+                fotoBytes = memoryStream.ToArray();
+            }
+
+            // Obtener el perfil actual
+            var perfilActual = await _serviceCandidato.GetPerfilById(perfilId);
+            
+            // Actualizar solo la foto de perfil
+            perfilActual.FotoPerfil = Convert.ToBase64String(fotoBytes);
+            
+            var perfilActualizado = await _serviceCandidato.UpdatePerfil(perfilActual);
+            
+            return new ApiResponse("Foto de perfil subida exitosamente");
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
 }

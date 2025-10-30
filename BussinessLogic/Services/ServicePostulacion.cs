@@ -122,7 +122,12 @@ namespace BussinessLogic.Services
                 List<Postulacion> postulaciones = (await _unitOfWork
                     .GenericRepository<Postulacion>()
                     .GetByCriteriaIncludingSpecificRelations(
-                        x => x.IdPerfilCandidato == idPerfil,
+                        x => x.IdPerfilCandidato == idPerfil && x.FechaBaja == null &&
+                        x.Oferta.FechaBaja == null &&
+                        x.Oferta.PerfilEmpresa.FechaBaja == null &&
+                        x.Oferta.FechaInicio <= DateTime.Now &&
+                        (x.Oferta.FechaFin == null || x.Oferta.FechaFin >= DateTime.Now) &&
+                        x.Oferta.PerfilEmpresa.IdEstadoValidacion == EstadoValidacion.IdEstadoAprobada,
                         q => q
                             .Include(p => p.Oferta)
                             .ThenInclude(to => to.TipoContrato)
@@ -136,7 +141,7 @@ namespace BussinessLogic.Services
                                 .ThenInclude(h => h.EstadoPostulacion)
                             .Include(p => p.PerfilCandidato)
 
-                    )).ToList();
+                    )).OrderByDescending(f=> f.FechaModificacion).ToList();
 
 
                 return postulaciones.Adapt<List<PostulacionDTO>>();
@@ -227,7 +232,7 @@ namespace BussinessLogic.Services
                 ctx.Parameters["Estados"] = estados;
 
                 var result = postulaciones
-                .OrderByDescending(p => p.FechaAlta)
+                .OrderByDescending(p => p.FechaModificacion)
                 .ToList()
                 .BuildAdapter()                           // <-- crea el adaptador para esta conversión
                 .AddParameters("Estados", estados)        // <-- pasa parámetros al mapeo (MapContext.Parameters)
@@ -266,7 +271,7 @@ namespace BussinessLogic.Services
                     FechaPostulacion = p.FechaAlta.ToString("yyyy-MM-dd"),
                     TituloOferta = p.Oferta?.Titulo,
                     NombreEmpresa = p.Oferta?.PerfilEmpresa?.RazonSocial
-                }).ToList();
+                }).OrderByDescending(p => p.FechaPostulacion).ToList();
 
                 return resultado;
             }
@@ -276,59 +281,82 @@ namespace BussinessLogic.Services
                 throw new Exception($"Error al obtener postulaciones de la oferta: {ex.Message}", ex);
             }
         }
-        
-        public async Task<IList<PerfilCandidatoDTO>> GetCandidatosByPostulaciones(string emailEmpresa)
+
+        public async Task<IList<PostulacionCandidatoDTO>> GetPostulacionesCandidatosEmpresa(string email)
         {
-             // 1️⃣ Buscar el usuario empresa
-            var usuarioEmpresa = (await _unitOfWork.GenericRepository<Usuario>()
-                .GetByCriteria(u => u.Email == emailEmpresa && u.FechaBaja == null))
-                .FirstOrDefault();
-
-            if (usuarioEmpresa == null)
-                throw new ApiException("El usuario no existe", (int)HttpStatusCode.NotFound);
-
-
-            // 2️⃣ Traer todas las postulaciones de las ofertas de esa empresa
-            var postulaciones = (await _unitOfWork.GenericRepository<Postulacion>()
-                .GetByCriteriaIncludingSpecificRelations(
-                    p => p.Oferta.PerfilEmpresa.IdUsuario == usuarioEmpresa.Id && p.FechaBaja == null,
-                    q => q
-                        .Include(p => p.PerfilCandidato)
-                            .ThenInclude(pc => pc.Usuario)
-                        .Include(p => p.PerfilCandidato)
-                            .ThenInclude(pc => pc.Carrera)
-                        .Include(p => p.PerfilCandidato)
-                            .ThenInclude(pc => pc.Genero)
-                        .Include(p => p.Oferta)
-                )).ToList();
-                
-            var candidatos = postulaciones
-                .Select(p => p.PerfilCandidato)
-                .Where(c => c != null)
-                .Distinct()
-                .ToList();
-
-                // 3️⃣ Mapearlos al DTO
-            var resultado = candidatos.Select(c => new PerfilCandidatoDTO
+            try
             {
-                Id = c.Id,
-                Descripcion = c.Descripcion,
-                IdUsuario = c.IdUsuario,
-                IdGenero = c.IdGenero,
-                IdCarrera = c.IdCarrera,
-                Legajo = c.Legajo,
-                AnioEgreso = c.AnioEgreso,
-                Cv = c.Cv != null ? Convert.ToBase64String(c.Cv) : null,
-                FechaAlta = c.FechaAlta,
-                FechaModificacion = c.FechaModificacion,
-                FechaBaja = c.FechaBaja,
-                GeneroNombre = c.Genero?.Nombre,
-                CarreraNombre = c.Carrera?.Nombre,
-                Nombre = c.Usuario?.Nombre,
-                Email = c.Usuario?.Email
-            }).ToList();
+                var empresa = (await _unitOfWork.GenericRepository<PerfilEmpresa>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        e => e.Usuario.Email == email && e.FechaBaja == null,
+                        q => q.Include(u => u.Usuario)
+                    ))
+                    .FirstOrDefault();
 
-            return resultado;
+                if (empresa == null)
+                    throw new Exception($"No se encontró ninguna empresa asociada al email: {email}");
+
+                var postulaciones = (await _unitOfWork.GenericRepository<Postulacion>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        p => p.Oferta.IdPerfilEmpresa == empresa.Id && p.FechaBaja == null,
+                        q => q
+                            .Include(p => p.Oferta)
+                                .ThenInclude(o => o.Modalidad)
+                            .Include(p => p.Oferta)
+                                .ThenInclude(o => o.TipoContrato)
+                            .Include(p => p.Oferta)
+                                .ThenInclude(o => o.Localidad)
+                                    .ThenInclude(l => l.Provincia)
+                                        .ThenInclude(pr => pr.Pais)
+                            .Include(p => p.Historial.OrderByDescending(h => h.FechaAlta).Take(1))
+                                .ThenInclude(h => h.EstadoPostulacion)
+                            .Include(p => p.PerfilCandidato)
+                                .ThenInclude(pc => pc.Usuario)
+                            .Include(p => p.PerfilCandidato)
+                                .ThenInclude(pc => pc.Carrera)
+                            .Include(p => p.PerfilCandidato)
+                                .ThenInclude(pc => pc.Genero)
+                    )).ToList();
+
+                var result = postulaciones.Select(p => new PostulacionCandidatoDTO
+                {
+                    // Postulación
+                    IdPostulacion = p.Id,
+                    EstadoPostulacion = p.Historial
+                        .OrderByDescending(h => h.FechaAlta)
+                        .FirstOrDefault()?.EstadoPostulacion?.Nombre ?? "Sin estado",
+                    Observacion = p.Observacion,
+                    FechaPostulacion = p.FechaAlta,
+
+                    // Candidato
+                    IdCandidato = p.PerfilCandidato?.Id ?? 0,
+                    NombreCandidato = p.PerfilCandidato?.Usuario?.Nombre ?? "Candidato desconocido",
+                    Email = p.PerfilCandidato?.Usuario?.Email,
+                    DescripcionPerfil = p.PerfilCandidato?.Descripcion,
+                    GeneroNombre = p.PerfilCandidato?.Genero?.Nombre,
+                    CarreraNombre = p.PerfilCandidato?.Carrera?.Nombre,
+                    AnioEgreso = p.PerfilCandidato?.AnioEgreso,
+                    Cv = p.PerfilCandidato?.Cv != null ? Convert.ToBase64String(p.PerfilCandidato.Cv) : null,
+
+                    // Oferta
+                    IdOferta = p.Oferta?.Id ?? 0,
+                    TituloOferta = p.Oferta?.Titulo,
+                    DescripcionOferta = p.Oferta?.Descripcion,
+
+                    // Extras
+                    Modalidad = p.Oferta?.Modalidad?.Nombre,
+                    TipoContrato = p.Oferta?.TipoContrato?.Nombre,
+                    Localidad = p.Oferta?.Localidad?.Nombre,
+                    Provincia = p.Oferta?.Localidad?.Provincia?.Nombre,
+                    Pais = p.Oferta?.Localidad?.Provincia?.Pais?.Nombre,
+                }).ToList();
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener postulaciones de la empresa: {ex.Message}", ex);
+            }
         }
 
     }
