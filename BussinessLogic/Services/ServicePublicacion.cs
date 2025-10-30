@@ -52,8 +52,8 @@ namespace BussinessLogic.Services
         {
             try
             {
-                Usuario usuario = (await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(u=>u.Email == email)).FirstOrDefault();
-                PerfilEmpresa perfil = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(p=>p.IdUsuario == usuario.Id)).FirstOrDefault();
+                Usuario usuario = (await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(u => u.Email == email)).FirstOrDefault();
+                PerfilEmpresa perfil = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(p => p.IdUsuario == usuario.Id)).FirstOrDefault();
                 List<Oferta> ofertas = (await _unitOfWork.GenericRepository<Oferta>()
                     .GetAllIncludingSpecificRelations(
                         q => q.Where(o => o.IdPerfilEmpresa == perfil.Id)
@@ -65,7 +65,7 @@ namespace BussinessLogic.Services
                         .ThenInclude(p => p.Provincia)
                         .ThenInclude(p => p.Pais)
                     )
-                ).ToList();
+                ).OrderByDescending(p => p.FechaModificacion).ToList();
 
                 return ofertas.Adapt<List<OfertaDTO>>();
             }
@@ -82,12 +82,18 @@ namespace BussinessLogic.Services
         public async Task<OfertaDTO> CrearOferta(CrearOfertaDTO data, string email)
         {
             try
-            {   
-                Usuario usuario = (await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(e=>e.Email == email)).FirstOrDefault();
+            {
+                Usuario usuario = (await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(e => e.Email == email)).FirstOrDefault();
                 if (usuario == null)
                     throw new ApiException("no existe el usuario", (int)HttpStatusCode.NotFound);
-                
-                PerfilEmpresa perfil = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(u=>u.IdUsuario == usuario.Id)).FirstOrDefault();
+
+                PerfilEmpresa perfil = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(u => u.IdUsuario == usuario.Id)).FirstOrDefault();
+                if (perfil.IdEstadoValidacion != EstadoValidacion.IdEstadoAprobada)
+                {
+                    throw new ApiException("El perfil de la empresa no está aprobado para crear ofertas.", (int)HttpStatusCode.Forbidden);
+                }
+
+
                 if (perfil == null)
                 {
                     // Auto-crear perfil de empresa si no existe
@@ -218,7 +224,7 @@ namespace BussinessLogic.Services
             }
         }
 
-        public async Task<IList<OfertaDTO>> GetPublicaciones(SearchPublicacionesDTO filtro)
+        public async Task<IList<OfertaDTO>> GetPublicaciones(SearchPublicacionesDTO filtro, int IdPerfilCandidato)
         {
             try
             {
@@ -237,14 +243,10 @@ namespace BussinessLogic.Services
                     IList<int> idsTiposContrato = (await _unitOfWork.GenericRepository<TipoContrato>().GetByCriteria(m => filtro.TiposContrato.Contains(m.Codigo))).Select(m => m.Id).ToList();
                     search = search.Where(o => idsTiposContrato.Contains(o.IdTipoContrato));
                 }
-                
-                if (filtro.Carreras != null && filtro.Carreras.Count > 0)
-                {
-                    IList<int> idsCarreras = (await _unitOfWork.GenericRepository<Carrera>().GetByCriteria(c => filtro.Carreras.Contains(c.Codigo))).Select(c => c.Id).ToList();
-                    search = search.Where(o => o.OfertaCarreras.Any(oc => idsCarreras.Contains(oc.IdCarrera) && oc.FechaBaja == null));
-                }
 
-                List<Oferta> oferta = search
+                search = search.Where(o => o.PerfilEmpresa.FechaBaja == null && o.PerfilEmpresa.IdEstadoValidacion == EstadoValidacion.IdEstadoAprobada);
+
+                List<Oferta> ofertas = search
                     .Include(pe => pe.PerfilEmpresa)
                         .ThenInclude(u => u.Usuario)
                     .Include(m => m.Modalidad)
@@ -252,11 +254,25 @@ namespace BussinessLogic.Services
                     .Include(l => l.Localidad)
                         .ThenInclude(p => p.Provincia)
                             .ThenInclude(p => p.Pais)
-                    .Include(o => o.OfertaCarreras)
-                        .ThenInclude(oc => oc.Carrera)
-                    .ToList();
+                    .Include(p => p.Postulaciones)
+                    .OrderByDescending(o => o.FechaModificacion).ToList();
 
-                return oferta.Adapt<List<OfertaDTO>>();
+                var ofertasDto = ofertas.Adapt<List<OfertaDTO>>();
+
+                foreach (var dto in ofertasDto)
+                {
+                    var ofertaOriginal = ofertas.First(o => o.Id == dto.Id);
+
+                    // Si el candidato tiene una postulación activa, no puede postularse
+                    bool postulado = ofertaOriginal.Postulaciones
+                        .Any(p => p.IdPerfilCandidato == IdPerfilCandidato && p.FechaBaja == null);
+
+                    //si esta postulado, no puede postularse
+                    dto.PuedePostularse = !postulado;
+                }
+
+                return ofertasDto;
+
             }
             catch (ApiException)
             {
@@ -275,7 +291,7 @@ namespace BussinessLogic.Services
                 // Obtener estado de validación pendiente
                 var estadoValidacion = (await _unitOfWork.GenericRepository<EstadoValidacion>()
                     .GetByCriteria(e => e.Codigo == "Pendiente")).FirstOrDefault();
-                
+
                 if (estadoValidacion == null)
                     throw new ApiException("No se encontró el estado de validación 'Pendiente'", (int)HttpStatusCode.InternalServerError);
 
@@ -319,7 +335,7 @@ namespace BussinessLogic.Services
                 .Include(m => m.Modalidad)
                 .Include(e => e.PerfilEmpresa)
 
-            )).Where(f => f.FechaBaja == null).OrderByDescending(f => f.FechaAlta).ToList();
+            )).Where(f => f.FechaBaja == null).OrderByDescending(f => f.FechaModificacion).ToList();
                 // int cantidad = o.Count;
                 ofertaReciente.Ofertas = o.Adapt<List<OfertaDTO>>().ToList(); //mapeo a DTO y tomo los primeros 'limit' elementos
                 ofertaReciente.CantidadOfertas = o.Count;
@@ -332,7 +348,7 @@ namespace BussinessLogic.Services
         /// <summary>
         /// Devuelve todas las publicaciones (ofertas) de una empresa según el email del usuario.
         /// </summary>
-       public async Task<IList<OfertaDTO>> GetPublicacionesEmpresa(string email)
+        public async Task<IList<OfertaDTO>> GetPublicacionesEmpresa(string email)
         {
             try
             {
@@ -418,7 +434,7 @@ namespace BussinessLogic.Services
                             .Include(p => p.PerfilCandidato)
                                 .ThenInclude(pc => pc.Usuario)
                     ))
-                    .ToList();
+                    .OrderByDescending(p => p.FechaModificacion).ToList();
 
                 // 3️⃣ Proyectamos a DTO
                 var result = postulaciones.Select(p => new PostulacionDTO

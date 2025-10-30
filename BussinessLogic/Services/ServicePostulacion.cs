@@ -122,7 +122,12 @@ namespace BussinessLogic.Services
                 List<Postulacion> postulaciones = (await _unitOfWork
                     .GenericRepository<Postulacion>()
                     .GetByCriteriaIncludingSpecificRelations(
-                        x => x.IdPerfilCandidato == idPerfil,
+                        x => x.IdPerfilCandidato == idPerfil && x.FechaBaja == null &&
+                        x.Oferta.FechaBaja == null &&
+                        x.Oferta.PerfilEmpresa.FechaBaja == null &&
+                        x.Oferta.FechaInicio <= DateTime.Now &&
+                        (x.Oferta.FechaFin == null || x.Oferta.FechaFin >= DateTime.Now) &&
+                        x.Oferta.PerfilEmpresa.IdEstadoValidacion == EstadoValidacion.IdEstadoAprobada,
                         q => q
                             .Include(p => p.Oferta)
                             .ThenInclude(to => to.TipoContrato)
@@ -136,7 +141,7 @@ namespace BussinessLogic.Services
                                 .ThenInclude(h => h.EstadoPostulacion)
                             .Include(p => p.PerfilCandidato)
 
-                    )).ToList();
+                    )).OrderByDescending(f=> f.FechaModificacion).ToList();
 
 
                 return postulaciones.Adapt<List<PostulacionDTO>>();
@@ -227,7 +232,7 @@ namespace BussinessLogic.Services
                 ctx.Parameters["Estados"] = estados;
 
                 var result = postulaciones
-                .OrderByDescending(p => p.FechaAlta)
+                .OrderByDescending(p => p.FechaModificacion)
                 .ToList()
                 .BuildAdapter()                           // <-- crea el adaptador para esta conversión
                 .AddParameters("Estados", estados)        // <-- pasa parámetros al mapeo (MapContext.Parameters)
@@ -266,7 +271,7 @@ namespace BussinessLogic.Services
                     FechaPostulacion = p.FechaAlta.ToString("yyyy-MM-dd"),
                     TituloOferta = p.Oferta?.Titulo,
                     NombreEmpresa = p.Oferta?.PerfilEmpresa?.RazonSocial
-                }).ToList();
+                }).OrderByDescending(p => p.FechaPostulacion).ToList();
 
                 return resultado;
             }
