@@ -359,5 +359,81 @@ namespace BussinessLogic.Services
             }
         }
 
+        public async Task CambiarEstadoPostulacion(int idPostulacion, string nombreEstado, string emailEmpresa)
+        {
+            bool commitRealizado = false;
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                // 1️⃣ Validar empresa existente
+                var empresa = (await _unitOfWork.GenericRepository<PerfilEmpresa>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        e => e.Usuario.Email == emailEmpresa && e.FechaBaja == null,
+                        q => q.Include(e => e.Usuario)
+                    ))
+                    .FirstOrDefault();
+
+                if (empresa == null)
+                    throw new ApiException($"No se encontró ninguna empresa activa asociada al email '{emailEmpresa}'.", 
+                        (int)HttpStatusCode.NotFound);
+
+                // 2️⃣ Validar que la postulación exista y pertenezca a una oferta de la empresa
+                var postulacion = (await _unitOfWork.GenericRepository<Postulacion>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        p => p.Id == idPostulacion && p.FechaBaja == null,
+                        q => q.Include(p => p.Oferta)
+                    ))
+                    .FirstOrDefault();
+
+                if (postulacion == null)
+                    throw new ApiException($"No se encontró la postulación con ID {idPostulacion}.", 
+                        (int)HttpStatusCode.NotFound);
+
+                if (postulacion.Oferta == null || postulacion.Oferta.IdPerfilEmpresa != empresa.Id)
+                    throw new ApiException("La postulación no pertenece a una oferta publicada por esta empresa.", 
+                        (int)HttpStatusCode.Forbidden);
+
+                // 3️⃣ Buscar el estado por nombre (tabla EstadoPostulacion)
+                var estado = (await _unitOfWork.GenericRepository<EstadoPostulacion>()
+                    .GetByCriteria(e => e.Nombre.ToLower() == nombreEstado.ToLower()))
+                    .FirstOrDefault();
+
+                if (estado == null)
+                    throw new ApiException($"No se encontró un estado con el nombre '{nombreEstado}'.", 
+                        (int)HttpStatusCode.NotFound);
+
+                // 4️⃣ Crear nuevo registro en PostulacionHistorial
+                PostulacionHistorial historial = new()
+                {
+                    IdPostulacion = postulacion.Id,
+                    IdEstadoPostulacion = estado.Id,
+                    Motivo = "Interacción empresa",
+                    FechaAlta = DateTime.Now,
+                    FechaModificacion = DateTime.Now,
+                    FechaBaja = null
+                };
+
+                await _unitOfWork.GenericRepository<PostulacionHistorial>().Insert(historial);
+
+                // 5️⃣ Guardar cambios y confirmar transacción
+                await _unitOfWork.CommitAsync();
+                commitRealizado = true;
+            }
+            catch (ApiException)
+            {
+                throw; // No envolvemos ApiException para preservar su mensaje y código
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Error al cambiar el estado de la postulación: {ex.Message}");
+            }
+            finally
+            {
+                if (!commitRealizado)
+                    await _unitOfWork.RollbackAsync();
+            }
+        }
     }
 }
