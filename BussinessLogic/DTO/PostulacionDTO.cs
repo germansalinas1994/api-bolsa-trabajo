@@ -28,5 +28,10 @@ namespace BussinessLogic.DTO
         public string? NombreCandidato { get; set; }
     }
 
-}
+    public class CambiarEstadoPostulacionDTO
+    {
+        public int IdEstado { get; set; }
+        public string? Motivo { get; set; }
+    }
 
+}

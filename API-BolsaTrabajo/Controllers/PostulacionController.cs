@@ -131,5 +131,25 @@ namespace API_Client.Controllers
             catch (ApiException) { throw; }
             catch (Exception ex) { throw new ApiException(ex); }
         }
+
+        [HttpPut("cambiar_estado/{idPostulacion}")]
+        [ProducesResponseType(typeof(PostulacionDTO), StatusCodes.Status200OK)]
+        public async Task<ApiResponse> CambiarEstadoPostulacion(
+            [FromRoute] int idPostulacion,
+            [FromBody] CambiarEstadoPostulacionDTO data)
+        {
+            try
+            {
+                string email = UserEmailFromJWT();
+                var postulacion = await _service.CambiarEstadoPostulacion(
+                    idPostulacion, 
+                    data.IdEstado, 
+                    data.Motivo, 
+                    email);
+                return new ApiResponse("Estado de postulación actualizado correctamente", postulacion);
+            }
+            catch (ApiException) { throw; }
+            catch (Exception ex) { throw new ApiException(ex); }
+        }
     }
 }

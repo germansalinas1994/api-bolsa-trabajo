@@ -12,8 +12,11 @@ namespace BussinessLogic.Services
 {
     public class ServiceCandidato : GenericService
     {
-        public ServiceCandidato(IUnitOfWork unitOfWork) : base(unitOfWork)
+        private readonly ServiceNotificacion _serviceNotificacion;
+
+        public ServiceCandidato(IUnitOfWork unitOfWork, ServiceNotificacion serviceNotificacion) : base(unitOfWork)
         {
+            _serviceNotificacion = serviceNotificacion;
         }
 
         public async Task<PerfilCandidatoDTO> GetPerfilById(int perfilId)
@@ -257,6 +260,48 @@ namespace BussinessLogic.Services
                 await _unitOfWork.BeginTransactionAsync();
                 await _unitOfWork.GenericRepository<PerfilCandidato>().Update(perfilExistente);
                 await _unitOfWork.CommitAsync();
+
+                // Crear notificación al estudiante sobre la actualización de su perfil
+                try
+                {
+                    // Solo notificar si hubo cambios significativos
+                    bool cambiosSignificativos = 
+                        !string.IsNullOrEmpty(perfilDTO.Cv) ||
+                        perfilDTO.IdCarrera.HasValue ||
+                        perfilDTO.IdGenero.HasValue ||
+                        !string.IsNullOrEmpty(perfilDTO.Descripcion);
+
+                    if (cambiosSignificativos)
+                    {
+                        // Buscar una postulación activa del candidato para asociar a la notificación
+                        var postulacionActiva = (await _unitOfWork.GenericRepository<Postulacion>()
+                            .GetByCriteria(p => p.IdPerfilCandidato == perfilExistente.Id && p.FechaBaja == null))
+                            .OrderByDescending(p => p.FechaModificacion)
+                            .FirstOrDefault();
+
+                        if (postulacionActiva != null)
+                        {
+                            var usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(perfilExistente.IdUsuario);
+                            if (usuario != null)
+                            {
+                                var notificacionDTO = new CrearNotificacionDTO
+                                {
+                                    IdUsuario = usuario.Id,
+                                    Asunto = "Perfil actualizado correctamente",
+                                    Mensaje = "Tu perfil ha sido actualizado exitosamente. Los cambios serán visibles para las empresas.",
+                                    IdPostulacion = postulacionActiva.Id
+                                };
+
+                                await _serviceNotificacion.CrearNotificacion(notificacionDTO);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log error pero no fallar la actualización si falla la notificación
+                    Console.WriteLine($"Error al crear notificación de actualización de perfil: {ex.Message}");
+                }
 
                 // Retornar el perfil actualizado
                 return await GetPerfilByUsuarioId(perfilExistente.IdUsuario);
