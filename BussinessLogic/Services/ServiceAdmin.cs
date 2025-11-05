@@ -12,7 +12,7 @@ namespace BussinessLogic.Services
 {
     public class ServiceAdmin : GenericService
     {
-                private readonly ServiceEmail _serviceEmail;
+        private readonly ServiceEmail _serviceEmail;
 
         public ServiceAdmin(IUnitOfWork unitOfWork, ServiceEmail serviceEmail) : base(unitOfWork)
         {
@@ -411,6 +411,88 @@ namespace BussinessLogic.Services
             }
         }
 
+        public async Task<DashboardAdminDTO> GetDashboardAdmin()
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                // 🏢 Ofertas publicadas y activas
+                var ofertas = (await _unitOfWork
+                    .GenericRepository<Oferta>()
+                    .GetAll())
+                    .Where(o => o.FechaBaja == null)
+                    .ToList();
+
+                int ofertasPublicadas = ofertas.Count;
+                int ofertasActivas = ofertas.Count(o => o.FechaFin == null || o.FechaFin > DateTime.UtcNow);
+
+                // 🧑‍💼 Candidatos (con sus relaciones)
+                var candidatos = (await _unitOfWork
+                    .GenericRepository<PerfilCandidato>()
+                    .GetAllIncludingRelations())
+                    .Where(pc => pc.FechaBaja == null)
+                    .ToList();
+
+                int totalCandidatos = candidatos.Count;
+
+                // 🎓 Carreras necesarias para los candidatos
+                var cantidadCarreras = candidatos
+                    .Where(c => c.Carrera != null)
+                    .GroupBy(c => c.Carrera.Nombre)
+                    .Select(g => new { Carrera = g.Key, Total = g.Count() })
+                    .ToDictionary(g => g.Carrera, g => g.Total);
+
+                // 📬 Postulaciones
+                var postulaciones = (await _unitOfWork
+                    .GenericRepository<Postulacion>()
+                    .GetAll())
+                    .Where(p => p.FechaBaja == null)
+                    .ToList();
+
+                int totalPostulaciones = postulaciones.Count;
+                int candidatosUnicos = postulaciones.Select(p => p.IdPerfilCandidato).Distinct().Count();
+
+                // 📈 Postulaciones por mes (últimos 6 meses)
+                var desde = new DateTime(DateTime.UtcNow.AddMonths(-5).Year, DateTime.UtcNow.AddMonths(-5).Month, 1);
+                var postulacionesPorMes = postulaciones
+                    .Where(p => p.FechaAlta >= desde)
+                    .GroupBy(p => new { p.FechaAlta.Year, p.FechaAlta.Month })
+                    .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                    .Select(g => new PostulacionesMesDTO
+                    {
+                        Mes = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM"),
+                        Total = g.Count()
+                    })
+                    .ToList();
+
+                await _unitOfWork.CommitAsync();
+
+                // 🧩 Construcción final del DTO
+                return new DashboardAdminDTO
+                {
+                    Metricas = new MetricasDTO
+                    {
+                        OfertasPublicadas = ofertasPublicadas,
+                        OfertasActivas = ofertasActivas,
+                        PostulacionesRecibidas = totalPostulaciones,
+                        CandidatosUnicos = totalCandidatos
+                    },
+                    PostulacionesPorMes = postulacionesPorMes,
+                    CantidadCarreras = cantidadCarreras
+                };
+            }
+            catch (ApiException ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw new ApiException("Error al obtener el dashboard del administrador", 500, ex.Message);
+            }
+        }
 
     }
 }
