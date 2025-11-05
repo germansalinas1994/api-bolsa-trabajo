@@ -65,6 +65,18 @@ public class EmpresaController : GenericController
                 throw new ApiException("Los datos del perfil son requeridos", (int)HttpStatusCode.BadRequest);
             }
 
+            // Obtener el email del usuario autenticado desde el JWT
+            string userEmail = UserEmailFromJWT();
+            
+            // Obtener el idPerfilEmpresa del usuario autenticado usando el GenericService heredado
+            int idPerfilEmpresaUsuario = await _service.GetPerfilEmpresaUsuario(userEmail);
+            
+            // Verificar que el perfil que se intenta actualizar pertenece al usuario autenticado
+            if (perfilDTO.Id != idPerfilEmpresaUsuario)
+            {
+                throw new ApiException("No tienes permiso para actualizar este perfil", (int)HttpStatusCode.Forbidden);
+            }
+
             var perfilActualizado = await _serviceEmpresa.UpdatePerfil(perfilDTO);
             return new ApiResponse(perfilActualizado);
         }
@@ -80,13 +92,25 @@ public class EmpresaController : GenericController
 
     [HttpPost]
     [Route("upload_foto_perfil")]
-    public async Task<ApiResponse> UploadFotoPerfil([FromForm] IFormFile foto, [FromQuery] int perfilId = 1)
+    public async Task<ApiResponse> UploadFotoPerfil([FromForm] IFormFile foto, [FromQuery] int perfilId)
     {
         try
         {
             if (foto == null || foto.Length == 0)
             {
                 throw new ApiException("Archivo de foto requerido", (int)HttpStatusCode.BadRequest);
+            }
+
+            // Obtener el email del usuario autenticado desde el JWT
+            string userEmail = UserEmailFromJWT();
+            
+            // Obtener el idPerfilEmpresa del usuario autenticado
+            int idPerfilEmpresaUsuario = await _service.GetPerfilEmpresaUsuario(userEmail);
+            
+            // Verificar que el perfil que se intenta actualizar pertenece al usuario autenticado
+            if (perfilId != idPerfilEmpresaUsuario)
+            {
+                throw new ApiException("No tienes permiso para actualizar la foto de este perfil", (int)HttpStatusCode.Forbidden);
             }
 
             // Validar tipo de archivo - solo imágenes
