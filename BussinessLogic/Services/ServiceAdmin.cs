@@ -417,48 +417,109 @@ namespace BussinessLogic.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                // 🏢 Ofertas publicadas y activas
-                var ofertas = (await _unitOfWork
+                // ============================================================
+                // OFERTAS
+                // ============================================================
+
+                var ofertas = await _unitOfWork
                     .GenericRepository<Oferta>()
-                    .GetAll())
-                    .Where(o => o.FechaBaja == null)
-                    .ToList();
+                    .GetByCriteriaIncludingSpecificRelations(
+                        o => o.FechaBaja == null,
+                        q => q
+                            .Include(o => o.OfertaCarreras)
+                                .ThenInclude(oc => oc.Carrera)
+                            .Include(o => o.Modalidad)
+                            .Include(o => o.TipoContrato)
+                            .Include(o => o.Localidad)
+                    );
 
                 int ofertasPublicadas = ofertas.Count;
                 int ofertasActivas = ofertas.Count(o => o.FechaFin == null || o.FechaFin > DateTime.UtcNow);
 
-                // 🧑‍💼 Candidatos (con sus relaciones)
+                // 🎓 Ofertas por carrera
+                var cantidadOfertasPorCarrera = ofertas
+                    .Where(o => o.OfertaCarreras != null && o.OfertaCarreras.Any())
+                    .SelectMany(o => o.OfertaCarreras)
+                    .Where(oc => oc.Carrera != null)
+                    .GroupBy(oc => oc.Carrera.Nombre)
+                    .Select(g => new { Carrera = g.Key, Total = g.Count() })
+                    .ToDictionary(g => g.Carrera, g => g.Total);
+
+                // 💼 Ofertas por tipo de contrato
+                var ofertasPorTipoContrato = ofertas
+                    .Where(o => o.TipoContrato != null)
+                    .GroupBy(o => o.TipoContrato.Nombre)
+                    .Select(g => new { Tipo = g.Key, Total = g.Count() })
+                    .ToDictionary(g => g.Tipo, g => g.Total);
+
+                // 🌎 Ofertas por modalidad
+                var ofertasPorModalidad = ofertas
+                    .Where(o => o.Modalidad != null)
+                    .GroupBy(o => o.Modalidad.Nombre)
+                    .Select(g => new { Modalidad = g.Key, Total = g.Count() })
+                    .ToDictionary(g => g.Modalidad, g => g.Total);
+
+                // 📍 Ofertas por localidad
+                var ofertasPorLocalidad = ofertas
+                    .Where(o => o.Localidad != null)
+                    .GroupBy(o => o.Localidad.Nombre)
+                    .Select(g => new { Localidad = g.Key, Total = g.Count() })
+                    .ToDictionary(g => g.Localidad, g => g.Total);
+
+                // ============================================================
+                //  CANDIDATOS
+                // ============================================================
+
                 var candidatos = (await _unitOfWork
                     .GenericRepository<PerfilCandidato>()
                     .GetAllIncludingRelations())
                     .Where(pc => pc.FechaBaja == null)
                     .ToList();
 
-                int totalCandidatos = candidatos.Count;
+                // Total de perfiles de candidatos activos
+                int totalCandidatosRegistrados = candidatos.Count;
 
-                // 🎓 Carreras necesarias para los candidatos
-                var cantidadCarreras = candidatos
+                // Candidatos por carrera
+                var cantidadCandidatosPorCarrera = candidatos
                     .Where(c => c.Carrera != null)
                     .GroupBy(c => c.Carrera.Nombre)
                     .Select(g => new { Carrera = g.Key, Total = g.Count() })
                     .ToDictionary(g => g.Carrera, g => g.Total);
 
-                // 📬 Postulaciones
+                // Candidatos por género
+                var candidatosPorGenero = candidatos
+                    .Where(c => c.Genero != null)
+                    .GroupBy(c => c.Genero.Nombre)
+                    .Select(g => new { Genero = g.Key, Total = g.Count() })
+                    .ToDictionary(g => g.Genero, g => g.Total);
+
+
+                // ============================================================
+                // POSTULACIONES
+                // ============================================================
+
                 var postulaciones = (await _unitOfWork
                     .GenericRepository<Postulacion>()
                     .GetAll())
                     .Where(p => p.FechaBaja == null)
                     .ToList();
 
+                // Total de postulaciones
                 int totalPostulaciones = postulaciones.Count;
-                int candidatosUnicos = postulaciones.Select(p => p.IdPerfilCandidato).Distinct().Count();
 
-                // 📈 Postulaciones por mes (últimos 6 meses)
+                // Cantidad de candidatos distintos que realizaron al menos una postulación
+                int candidatosConPostulaciones = postulaciones
+                    .Select(p => p.IdPerfilCandidato)
+                    .Distinct()
+                    .Count();
+
+                // Postulaciones por mes (últimos 6 meses)
                 var desde = new DateTime(DateTime.UtcNow.AddMonths(-5).Year, DateTime.UtcNow.AddMonths(-5).Month, 1);
                 var postulacionesPorMes = postulaciones
                     .Where(p => p.FechaAlta >= desde)
                     .GroupBy(p => new { p.FechaAlta.Year, p.FechaAlta.Month })
-                    .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                    .OrderBy(g => g.Key.Year)
+                    .ThenBy(g => g.Key.Month)
                     .Select(g => new PostulacionesMesDTO
                     {
                         Mes = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM"),
@@ -466,20 +527,68 @@ namespace BussinessLogic.Services
                     })
                     .ToList();
 
+
+                // ============================================================
+                // EMPRESAS
+                // ============================================================
+
+                var empresas = (await _unitOfWork
+                    .GenericRepository<PerfilEmpresa>()
+                    .GetAll())
+                    .Where(e => e.FechaBaja == null)
+                    .ToList();
+
+                int empresasRegistradas = empresas.Count;
+                int empresasVerificadas = empresas.Count(e => e.IdEstadoValidacion == EstadoValidacion.IdEstadoAprobada);
+                int empresasNoVerificadas = empresasRegistradas - empresasVerificadas;
+
+                var empresasPorVerificacion = new Dictionary<string, int>
+                {
+                    { "Verificadas", empresasVerificadas },
+                    { "No Verificadas", empresasNoVerificadas }
+                };
+
+
+                // ============================================================
+                // CONSTRUCCIÓN FINAL DEL DTO
+                // ============================================================
+
                 await _unitOfWork.CommitAsync();
 
-                // 🧩 Construcción final del DTO
                 return new DashboardAdminDTO
                 {
                     Metricas = new MetricasDTO
                     {
+                        // 🏢 Empresas
+                        EmpresasRegistradas = empresasRegistradas,
+                        EmpresasVerificadas = empresasVerificadas,
+                        EmpresasNoVerificadas = empresasNoVerificadas,
+
+                        // 👨‍🎓 Candidatos
+                        CandidatosRegistrados = totalCandidatosRegistrados,
+                        CandidatosConPostulaciones = candidatosConPostulaciones,
+
+                        // 📄 Ofertas
                         OfertasPublicadas = ofertasPublicadas,
                         OfertasActivas = ofertasActivas,
-                        PostulacionesRecibidas = totalPostulaciones,
-                        CandidatosUnicos = totalCandidatos
+
+                        // 💌 Postulaciones
+                        PostulacionesRecibidas = totalPostulaciones
                     },
+
+                    // 📈 Serie temporal
                     PostulacionesPorMes = postulacionesPorMes,
-                    CantidadCarreras = cantidadCarreras
+
+                    // 🎓 Distribuciones principales
+                    CantidadCandidatosPorCarrera = cantidadCandidatosPorCarrera,
+                    CantidadOfertasPorCarrera = cantidadOfertasPorCarrera,
+
+                    // 👥 Distribuciones secundarias (para gráficos)
+                    CandidatosPorGenero = candidatosPorGenero,
+                    EmpresasPorVerificacion = empresasPorVerificacion,
+                    OfertasPorTipoContrato = ofertasPorTipoContrato,
+                    OfertasPorModalidad = ofertasPorModalidad,
+                    OfertasPorLocalidad = ofertasPorLocalidad
                 };
             }
             catch (ApiException ex)
@@ -493,6 +602,7 @@ namespace BussinessLogic.Services
                 throw new ApiException("Error al obtener el dashboard del administrador", 500, ex.Message);
             }
         }
+
 
     }
 }
