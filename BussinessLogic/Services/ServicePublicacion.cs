@@ -324,10 +324,24 @@ namespace BussinessLogic.Services
         }
 
 
-        public async Task<OfertaRecienteDTO> GetRecientes(int limit)
+        public async Task<OfertaRecienteDTO> GetRecientes(string email, int limit)
         {
             try
             {
+                // 🔹 Buscar el candidato asociado al email
+                var candidato = (await _unitOfWork.GenericRepository<PerfilCandidato>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        e => e.Usuario.Email == email && e.FechaBaja == null,
+                        q => q.Include(u => u.Usuario)
+                    ))
+                    .FirstOrDefault();
+
+                if (candidato == null)
+                    throw new Exception($"No se encontró ningún candidato asociado al email: {email}");
+
+                int idCarreraCandidato = candidato.IdCarrera ?? 0;
+
+                // 🔹 Obtener las ofertas con sus relaciones
                 var ofertasQuery = await _unitOfWork.GenericRepository<Oferta>()
                     .GetAllIncludingSpecificRelations(q => q
                         .Include(o => o.Localidad).ThenInclude(l => l.Provincia)
@@ -338,12 +352,15 @@ namespace BussinessLogic.Services
                         .Include(o => o.Postulaciones)
                     );
 
+                // 🔹 Filtrar por carrera y por ofertas activas
                 var ofertas = ofertasQuery
-                    .Where(o => o.FechaBaja == null)
+                    .Where(o => o.FechaBaja == null &&
+                                o.OfertaCarreras.Any(oc => oc.IdCarrera == idCarreraCandidato))
                     .OrderByDescending(o => o.FechaModificacion)
                     .Take(limit)
                     .ToList();
 
+                // 🔹 Mapear a DTO
                 var dto = new OfertaRecienteDTO
                 {
                     CantidadOfertas = ofertas.Count,
@@ -359,13 +376,10 @@ namespace BussinessLogic.Services
                         Modalidad = o.Modalidad?.Codigo,
                         FechaInicio = o.FechaInicio.ToString("dd/MM/yyyy"),
                         FechaFin = o.FechaFin?.ToString("dd/MM/yyyy") ?? "",
-                        
                         NombreCarrera = o.OfertaCarreras != null && o.OfertaCarreras.Any()
                             ? string.Join(", ", o.OfertaCarreras.Select(oc => oc.Carrera?.Nombre))
                             : null,
-                        
                         CantidadPostulantes = o.Postulaciones?.Count ?? 0,
-                        
                         CartaPresentacion = null,
                         Observacion = null,
                         PuedePostularse = true
@@ -375,7 +389,10 @@ namespace BussinessLogic.Services
                 return dto;
             }
             catch (ApiException) { throw; }
-            catch (Exception ex) { throw ex; }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener ofertas recientes: {ex.Message}", ex);
+            }
         }
 
 
