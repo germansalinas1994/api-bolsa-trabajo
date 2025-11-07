@@ -219,6 +219,37 @@ namespace BussinessLogic.Services
 
             return Math.Min(porcentaje, 100); // Máximo 100%
         }
+
+        public int CalcularPorcentaje(string email)
+        {
+            int porcentaje = 0;
+
+            // Obtener el usuario por email
+            Usuario usuario = _unitOfWork.GenericRepository<Usuario>()
+                .GetByCriteria(u => u.Email == email && u.FechaBaja == null)
+                .Result
+                .FirstOrDefault();
+
+            PerfilEmpresa perfil = _unitOfWork.GenericRepository<PerfilEmpresa>()
+                .GetByCriteria(p => p.IdUsuario == usuario.Id && p.FechaBaja == null)
+                .Result
+                .FirstOrDefault(); 
+
+            // Campos básicos (20 puntos cada uno)
+            if (!string.IsNullOrEmpty(perfil.Descripcion)) porcentaje += 25;
+            if (!string.IsNullOrEmpty(perfil.RazonSocial)) porcentaje += 20;
+            if (!string.IsNullOrEmpty(perfil.Cuit)) porcentaje += 15;
+            if (perfil.IdEstadoValidacion.HasValue) porcentaje += 10;
+
+            // Campos del usuario
+            if (usuario != null)
+            {
+                if (!string.IsNullOrEmpty(usuario.Nombre)) porcentaje += 10;
+                if (!string.IsNullOrEmpty(usuario.Email)) porcentaje += 10;
+            }
+
+            return Math.Min(porcentaje, 100); // Máximo 100%
+        }
     }
 }
 
