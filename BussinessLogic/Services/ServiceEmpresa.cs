@@ -70,6 +70,7 @@ namespace BussinessLogic.Services
                     perfilDTO.Email = usuario.Email;
                     perfilDTO.UsuarioActivo = usuario.Activo;
                     perfilDTO.IdRol = usuario.IdRol;
+                    perfilDTO.FotoPerfil = usuario.FotoPerfil;
                 }
 
                 // Agregar información del rol
@@ -179,6 +180,17 @@ namespace BussinessLogic.Services
                 perfilExistente.Cuit = perfilDTO.Cuit ?? perfilExistente.Cuit;
                 perfilExistente.IdEstadoValidacion = perfilDTO.IdEstadoValidacion ?? perfilExistente.IdEstadoValidacion;
                 perfilExistente.FechaModificacion = DateTime.Now;
+
+                // Si se proporcionó una foto de perfil, actualizar en el usuario
+                if (perfilDTO.FotoPerfil != null)
+                {
+                    var usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(perfilExistente.IdUsuario);
+                    if (usuario != null)
+                    {
+                        usuario.FotoPerfil = perfilDTO.FotoPerfil;
+                        await _unitOfWork.GenericRepository<Usuario>().Update(usuario);
+                    }
+                }
 
                 await _unitOfWork.BeginTransactionAsync();
                 await _unitOfWork.GenericRepository<PerfilEmpresa>().Update(perfilExistente);
