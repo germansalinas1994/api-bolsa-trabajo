@@ -10,6 +10,7 @@ using DataAccess.Entities;
 using System.Net;
 
 
+
 namespace API_Client.Controllers
 {
     [Route("api/[controller]")]
@@ -130,6 +131,67 @@ namespace API_Client.Controllers
             }
             catch (ApiException) { throw; }
             catch (Exception ex) { throw new ApiException(ex); }
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<PostulacionDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        [Route("get_postulaciones_candidatos_empresa")]
+        public async Task<ApiResponse> GetPostulacionesCandidatosEmpresa()
+        {
+            try
+            {
+                string emailEmpresa = UserEmailFromJWT(); // Igual que en tu ejemplo
+                IList<PostulacionCandidatoDTO> candidatos = await _service.GetPostulacionesCandidatosEmpresa(emailEmpresa);
+                return new ApiResponse("Operación exitosa", candidatos);
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex);
+            }
+        }
+
+        [HttpPut("{idPostulacion}/estado")]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ApiResponse> CambiarEstadoPostulacion(
+            int idPostulacion,
+            [FromBody] string nombreEstado)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(nombreEstado))
+                    throw new ApiException("El nombre del estado es obligatorio.", (int)HttpStatusCode.BadRequest);
+
+                // 📩 Recuperar el email de la empresa desde el token JWT
+                string emailEmpresa = UserEmailFromJWT();
+
+                // 🧩 Ejecutar lógica de negocio
+                await _service.CambiarEstadoPostulacion(idPostulacion, nombreEstado, emailEmpresa);
+
+                return new ApiResponse("Estado actualizado correctamente.");
+            }
+            catch (ApiException ex)
+            {
+                // Responde con el mensaje y código definidos en la excepción
+                return new ApiResponse(ex.Message, ex.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException($"Error al cambiar el estado de la postulación: {ex.Message}");
+            }
         }
     }
 }

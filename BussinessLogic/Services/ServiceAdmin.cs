@@ -12,9 +12,14 @@ namespace BussinessLogic.Services
 {
     public class ServiceAdmin : GenericService
     {
-        public ServiceAdmin(IUnitOfWork unitOfWork) : base(unitOfWork) { }
+                private readonly ServiceEmail _serviceEmail;
 
-     
+        public ServiceAdmin(IUnitOfWork unitOfWork, ServiceEmail serviceEmail) : base(unitOfWork)
+        {
+            _serviceEmail = serviceEmail;
+        }
+
+
 
         public async Task AltaUsuario(int idUsuarioAlta, int idUsuario)
         {
@@ -168,7 +173,7 @@ namespace BussinessLogic.Services
                 }
 
                 // Obtener el perfil de la empresa
-                var perfilEmpresa = await _unitOfWork.GenericRepository<PerfilEmpresa>().GetById(idPerfilEmpresa);
+                var perfilEmpresa = await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByIdIncludingRelations(idPerfilEmpresa);
                 if (perfilEmpresa == null || perfilEmpresa.FechaBaja != null)
                 {
                     throw new ApiException("Perfil de empresa no encontrado", 404);
@@ -189,38 +194,14 @@ namespace BussinessLogic.Services
                     throw new ApiException("Estado de validación no encontrado", 404);
                 }
 
-
                 //aca se puede generar la notificacion para la empresa sobre el cambio de estado
                 perfilEmpresa.IdEstadoValidacion = estadoValidacion.Id;
                 perfilEmpresa.FechaModificacion = DateTime.UtcNow;
 
-                // Generar notificación para la empresa
-
-                //tambien en caso de ser rechazado, se tienen que setear fecha baja a las ofertas activas de la empresa
-                // if (estadoValidacion.Id == EstadoValidacion.IdEstadoRechazada)
-                // {
-                //     var ofertasActivas = (await _unitOfWork.GenericRepository<Oferta>().GetByCriteria(o => o.IdPerfilEmpresa == idPerfilEmpresa && o.FechaBaja == null)).ToList();
-                //     foreach (var oferta in ofertasActivas)
-                //     {
-                //         oferta.FechaBaja = DateTime.UtcNow;
-                //         oferta.FechaModificacion = DateTime.UtcNow;
-                //         await _unitOfWork.GenericRepository<Oferta>().Update(oferta);
-
-                //         //por cada oferta tengo que poner el historial en baja tambien
-                //         //TENGO QUE CREAR UNA NUEVA OFERTA HISTORIAL CON FECHA DE BAJA
-                //         var ofertaHistorial = new OfertaHistorial
-                //         {
-                //             IdOferta = oferta.Id,
-                //             IdEstadoOferta = EstadoOferta.IdEstadoBaja,
-                //             FechaAlta = DateTime.UtcNow,
-                //             FechaModificacion = DateTime.UtcNow,
-                //             FechaBaja = DateTime.UtcNow,
-                //         };
-                //     }
-                // }                  
 
                 await _unitOfWork.GenericRepository<PerfilEmpresa>().Update(perfilEmpresa);
                 await _unitOfWork.CommitAsync();
+                EnviarMailCambioEstadoValidacion(perfilEmpresa, estadoValidacion);
 
             }
             catch (ApiException ex)
@@ -234,6 +215,71 @@ namespace BussinessLogic.Services
                 throw new ApiException("Error al cambiar el estado de validación", 500, ex.Message);
             }
         }
+        private async Task EnviarMailCambioEstadoValidacion(PerfilEmpresa perfilEmpresa, EstadoValidacion estadoValidacion)
+        {
+            var emailEmpresa = perfilEmpresa?.Usuario?.Email ?? "noreply@utnfrlp.edu.ar";
+            var razonSocial = perfilEmpresa?.RazonSocial ?? "Su Empresa";
+            var estado = estadoValidacion?.Nombre ?? "Sin estado";
+            var aprobado = estadoValidacion?.Id == EstadoValidacion.IdEstadoAprobada;
+
+            string mensajeEstado = aprobado
+                ? $"<p>Nos complace informarle que su empresa <b>{razonSocial}</b> ha sido <b style='color:green'>APROBADA</b> para operar en la Bolsa de Trabajo de la UTN FRLP.</p>"
+                : $"<p>Lamentamos informarle que su empresa <b>{razonSocial}</b> ha sido <b style='color:red'>RECHAZADA</b> en el proceso de validación de la Bolsa de Trabajo UTN FRLP.</p>";
+
+            string cuerpoHtml = $@"
+    <html>
+      <body style='font-family: Arial, sans-serif; color: #333; background-color: #f5f5f5; padding: 20px;'>
+        <table align='center' width='600' cellpadding='0' cellspacing='0' 
+               style='background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);'>
+          <tr>
+            <td style='background-color: #003366; padding: 20px; text-align: center;'>
+              <img src='https://www.frlp.utn.edu.ar/sites/default/files/LOGO%20VERTICAL_1.jpg' 
+                   alt='UTN FRLP Logo' width='120' style='display:block; margin:auto; border-radius:5px;' />
+              <h2 style='color: #fff; margin-top: 10px;'>Bolsa de Trabajo - UTN FRLP</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style='padding: 30px;'>
+              <p>Estimado/a representante de <b>{razonSocial}</b>,</p>
+              {mensajeEstado}
+              {(aprobado ?
+                        "<p>Desde este momento puede acceder al portal de la Bolsa de Trabajo para publicar ofertas laborales y gestionar postulaciones de estudiantes y graduados.</p>" :
+                        "<p>Podrá volver a solicitar la validación cuando haya actualizado los datos requeridos o corregido la información pendiente.</p>")}
+              <p>Estado actual: <b style='color:#003366'>{estado}</b></p>
+              <p>
+                Ingrese al portal desde 
+                <a href='https://bolsadetrabajo.utnfrlp.edu.ar' 
+                   style='color: #003366; text-decoration: none; font-weight: bold;'>
+                   Bolsa de Trabajo UTN FRLP
+                </a>.
+              </p>
+              <p style='margin-top: 30px; color: #555; font-size: 14px;'>
+                Este es un mensaje automático. Por favor, no responda a este correo.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style='background-color: #f0f0f0; text-align: center; padding: 15px; font-size: 12px; color: #666;'>
+              © {DateTime.Now.Year} Universidad Tecnológica Nacional - Facultad Regional La Plata<br/>
+              <a href='https://www.frlp.utn.edu.ar' style='color: #003366; text-decoration: none;'>www.frlp.utn.edu.ar</a>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>";
+
+            string asunto = aprobado
+                ? "Validación aprobada - Bolsa de Trabajo UTN FRLP"
+                : "Validación rechazada - Bolsa de Trabajo UTN FRLP";
+
+            await _serviceEmail.EnviarCorreoAsync(
+                destinatario: emailEmpresa,
+                asunto: asunto,
+                cuerpoHtml: cuerpoHtml
+            );
+        }
+
+
 
         public async Task<List<PerfilEmpresaDTO>> GetEmpresasPorVerificar(int idUsuario, GenericSearchDTO filtro)
         {
@@ -364,7 +410,7 @@ namespace BussinessLogic.Services
                 throw new ApiException("Error al obtener los usuarios", 500, ex.Message);
             }
         }
-        
+
 
     }
 }

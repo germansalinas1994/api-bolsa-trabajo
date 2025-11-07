@@ -19,6 +19,7 @@ using BussinessLogic.Services;
 using Microsoft.AspNetCore.Authorization;
 using DataAccess;
 using Microsoft.AspNetCore.Mvc;
+using BussinessLogic.DTO.Email;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
 MapsterConfig.RegisterMappings();
 
 // Configurar la licencia de QuestPDF
@@ -73,8 +77,8 @@ builder.Services.AddSwaggerGen(c =>
 // builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection")));
 
 //base de datos local
-// builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection-Gonza")));
-builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection-local-Santi")));
+builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection-Gonza")));
+// builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("dbConnection-notebook")));
 
 //agrego la inyeccion de dependencia de los repositorios y el UnitOfWork
 
@@ -91,6 +95,7 @@ builder.Services.AddScoped<ServicePostulacion>();
 builder.Services.AddScoped<ServiceCandidato>();
 builder.Services.AddScoped<ServiceEmpresa>();
 builder.Services.AddScoped<ServiceAdmin>();
+builder.Services.AddScoped<ServiceEmail>();
 
 
 

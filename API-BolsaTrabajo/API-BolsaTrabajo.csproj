@@ -13,6 +13,7 @@
     <PackageReference Include="AutoWrapper.Core" Version="4.5.0" />
     <PackageReference Include="Google.Cloud.Storage.V1" Version="4.7.0" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="2.8.2.4" />
+    <PackageReference Include="MailKit" Version="4.14.1" />
     <PackageReference Include="mercadopago-sdk" Version="2.4.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />

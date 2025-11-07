@@ -205,7 +205,7 @@ namespace BussinessLogic.Services
         {
             try
             {
-                Oferta oferta = await _unitOfWork.GenericRepository<Oferta>().GetById(id);
+                Oferta oferta = await _unitOfWork.GenericRepository<Oferta>().GetByIdIncludingSpecificRelations(id, o => o.Include(pe => pe.PerfilEmpresa).ThenInclude(u => u.Usuario));
                 if (oferta == null)
                 {
                     throw new ApiException("No se encontró la publicación con el ID proporcionado.", (int)HttpStatusCode.NotFound);
