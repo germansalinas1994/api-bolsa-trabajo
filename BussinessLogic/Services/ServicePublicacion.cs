@@ -326,24 +326,58 @@ namespace BussinessLogic.Services
 
         public async Task<OfertaRecienteDTO> GetRecientes(int limit)
         {
-            OfertaRecienteDTO ofertaReciente = new OfertaRecienteDTO();
             try
             {
-                List<Oferta> o = (await _unitOfWork.GenericRepository<Oferta>()//aca digo que voy a la tabla oferta
-                .GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(p => p.Provincia)
-                .Include(tc => tc.TipoContrato)
-                .Include(m => m.Modalidad)
-                .Include(e => e.PerfilEmpresa)
+                var ofertasQuery = await _unitOfWork.GenericRepository<Oferta>()
+                    .GetAllIncludingSpecificRelations(q => q
+                        .Include(o => o.Localidad).ThenInclude(l => l.Provincia)
+                        .Include(o => o.TipoContrato)
+                        .Include(o => o.Modalidad)
+                        .Include(o => o.PerfilEmpresa)
+                        .Include(o => o.OfertaCarreras).ThenInclude(oc => oc.Carrera)
+                        .Include(o => o.Postulaciones)
+                    );
 
-            )).Where(f => f.FechaBaja == null).OrderByDescending(f => f.FechaModificacion).ToList();
-                // int cantidad = o.Count;
-                ofertaReciente.Ofertas = o.Adapt<List<OfertaDTO>>().ToList(); //mapeo a DTO y tomo los primeros 'limit' elementos
-                ofertaReciente.CantidadOfertas = o.Count;
-                return ofertaReciente; //mapeo a DTO y retorno
+                var ofertas = ofertasQuery
+                    .Where(o => o.FechaBaja == null)
+                    .OrderByDescending(o => o.FechaModificacion)
+                    .Take(limit)
+                    .ToList();
+
+                var dto = new OfertaRecienteDTO
+                {
+                    CantidadOfertas = ofertas.Count,
+                    Ofertas = ofertas.Select(o => new OfertaDTO
+                    {
+                        Id = o.Id,
+                        Titulo = o.Titulo,
+                        Descripcion = o.Descripcion,
+                        NombreLocalidad = o.Localidad?.Nombre,
+                        NombreProvincia = o.Localidad?.Provincia?.Nombre,
+                        NombreEmpresa = o.PerfilEmpresa?.RazonSocial,
+                        TipoContrato = o.TipoContrato?.Codigo,
+                        Modalidad = o.Modalidad?.Codigo,
+                        FechaInicio = o.FechaInicio.ToString("dd/MM/yyyy"),
+                        FechaFin = o.FechaFin?.ToString("dd/MM/yyyy") ?? "",
+                        
+                        NombreCarrera = o.OfertaCarreras != null && o.OfertaCarreras.Any()
+                            ? string.Join(", ", o.OfertaCarreras.Select(oc => oc.Carrera?.Nombre))
+                            : null,
+                        
+                        CantidadPostulantes = o.Postulaciones?.Count ?? 0,
+                        
+                        CartaPresentacion = null,
+                        Observacion = null,
+                        PuedePostularse = true
+                    }).ToList()
+                };
+
+                return dto;
             }
             catch (ApiException) { throw; }
             catch (Exception ex) { throw ex; }
         }
+
 
         /// <summary>
         /// Devuelve todas las publicaciones (ofertas) de una empresa según el email del usuario.
