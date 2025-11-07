@@ -1,9 +1,11 @@
 public class PostulacionCandidatoDTO
 {
+
     // Datos de la Postulación
     public int IdPostulacion { get; set; }
     public string EstadoPostulacion { get; set; } = string.Empty;
     public string? Observacion { get; set; }
+    public string? CartaPresentacion { get; set; }
     public DateTime FechaPostulacion { get; set; }
 
     // Datos del Candidato
