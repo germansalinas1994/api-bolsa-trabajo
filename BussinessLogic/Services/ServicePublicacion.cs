@@ -224,6 +224,61 @@ namespace BussinessLogic.Services
             }
         }
 
+        public async Task<OfertaDTO> GetOfertaById(int id, int? IdPerfilCandidato = null)
+        {
+            try
+            {
+                Oferta oferta = await _unitOfWork.GenericRepository<Oferta>()
+                    .GetByIdIncludingSpecificRelations(id,
+                        q => q.Include(pe => pe.PerfilEmpresa)
+                        .ThenInclude(u => u.Usuario)
+                        .Include(m => m.Modalidad)
+                        .Include(tc => tc.TipoContrato)
+                        .Include(l => l.Localidad)
+                        .ThenInclude(p => p.Provincia)
+                        .ThenInclude(p => p.Pais)
+                        .Include(o => o.OfertaCarreras)
+                        .ThenInclude(oc => oc.Carrera)
+                        .Include(p => p.Postulaciones)
+                    );
+
+                if (oferta == null)
+                {
+                    throw new ApiException("No se encontró la oferta con el ID proporcionado.", (int)HttpStatusCode.NotFound);
+                }
+
+                // Verificar si la oferta está eliminada
+                if (oferta.FechaBaja != null)
+                {
+                    throw new ApiException("La oferta no está disponible.", (int)HttpStatusCode.NotFound);
+                }
+
+                var ofertaDto = oferta.Adapt<OfertaDTO>();
+
+                // Si se proporciona IdPerfilCandidato, verificar si puede postularse
+                if (IdPerfilCandidato.HasValue)
+                {
+                    bool postulado = oferta.Postulaciones
+                        .Any(p => p.IdPerfilCandidato == IdPerfilCandidato.Value && p.FechaBaja == null);
+                    ofertaDto.PuedePostularse = !postulado;
+                }
+                else
+                {
+                    ofertaDto.PuedePostularse = true;
+                }
+
+                return ofertaDto;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
         public async Task<IList<OfertaDTO>> GetPublicaciones(SearchPublicacionesDTO filtro, int IdPerfilCandidato)
         {
             try

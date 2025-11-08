@@ -157,6 +157,40 @@ namespace API_Client.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("get_oferta/{id}")]
+        [ProducesResponseType(typeof(OfertaDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
+        public async Task<ApiResponse> GetOfertaById(int id)
+        {
+            try
+            {
+                int? IdPerfilCandidato = null;
+                try
+                {
+                    IdPerfilCandidato = await GetIdPerfilFromJWT();
+                }
+                catch
+                {
+                    // Si no puede obtener el perfil del JWT, continúa sin él
+                    // Esto permite que usuarios no autenticados vean la oferta
+                }
+
+                OfertaDTO oferta = await _service.GetOfertaById(id, IdPerfilCandidato);
+                return new ApiResponse("Oferta obtenida exitosamente", oferta);
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex);
+            }
+        }
+
         [HttpPost]
         [Route("crear_oferta")]
         public async Task<ApiResponse> CrearOferta([FromBody] CrearOfertaDTO data)
