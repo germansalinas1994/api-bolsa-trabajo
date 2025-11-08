@@ -486,6 +486,7 @@ namespace BussinessLogic.Services
                         .OrderByDescending(h => h.FechaAlta)
                         .FirstOrDefault()?.EstadoPostulacion?.Nombre ?? "Sin estado",
                     Observacion = p.Observacion,
+                    CartaPresentacion = p.CartaPresentacion,
                     FechaPostulacion = p.FechaAlta,
 
                     // Candidato

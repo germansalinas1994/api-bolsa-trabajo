@@ -145,13 +145,33 @@ public class EmpresaController : GenericController
 
             // Obtener el perfil actual
             var perfilActual = await _serviceEmpresa.GetPerfilById(perfilId);
-            
+
             // Actualizar solo la foto de perfil
             perfilActual.FotoPerfil = Convert.ToBase64String(fotoBytes);
-            
+
             var perfilActualizado = await _serviceEmpresa.UpdatePerfil(perfilActual);
-            
+
             return new ApiResponse("Foto de perfil subida exitosamente");
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+    
+    [HttpGet]
+    [Route("get_porcentaje_perfil")]
+    public async Task<int> GetPorcentajePerfil()
+    {
+        try
+        {
+            string email = UserEmailFromJWT();
+            var porcentaje = _serviceEmpresa.CalcularPorcentaje(email);
+            return porcentaje;
         }
         catch (ApiException e)
         {

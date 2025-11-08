@@ -324,26 +324,77 @@ namespace BussinessLogic.Services
         }
 
 
-        public async Task<OfertaRecienteDTO> GetRecientes(int limit)
+        public async Task<OfertaRecienteDTO> GetRecientes(string email, int limit)
         {
-            OfertaRecienteDTO ofertaReciente = new OfertaRecienteDTO();
             try
             {
-                List<Oferta> o = (await _unitOfWork.GenericRepository<Oferta>()//aca digo que voy a la tabla oferta
-                .GetAllIncludingSpecificRelations(q => q.Include(l => l.Localidad).ThenInclude(p => p.Provincia)
-                .Include(tc => tc.TipoContrato)
-                .Include(m => m.Modalidad)
-                .Include(e => e.PerfilEmpresa)
+                // 🔹 Buscar el candidato asociado al email
+                var candidato = (await _unitOfWork.GenericRepository<PerfilCandidato>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        e => e.Usuario.Email == email && e.FechaBaja == null,
+                        q => q.Include(u => u.Usuario)
+                    ))
+                    .FirstOrDefault();
 
-            )).Where(f => f.FechaBaja == null).OrderByDescending(f => f.FechaModificacion).ToList();
-                // int cantidad = o.Count;
-                ofertaReciente.Ofertas = o.Adapt<List<OfertaDTO>>().ToList(); //mapeo a DTO y tomo los primeros 'limit' elementos
-                ofertaReciente.CantidadOfertas = o.Count;
-                return ofertaReciente; //mapeo a DTO y retorno
+                if (candidato == null)
+                    throw new Exception($"No se encontró ningún candidato asociado al email: {email}");
+
+                int idCarreraCandidato = candidato.IdCarrera ?? 0;
+
+                // 🔹 Obtener las ofertas con sus relaciones
+                var ofertasQuery = await _unitOfWork.GenericRepository<Oferta>()
+                    .GetAllIncludingSpecificRelations(q => q
+                        .Include(o => o.Localidad).ThenInclude(l => l.Provincia)
+                        .Include(o => o.TipoContrato)
+                        .Include(o => o.Modalidad)
+                        .Include(o => o.PerfilEmpresa)
+                        .Include(o => o.OfertaCarreras).ThenInclude(oc => oc.Carrera)
+                        .Include(o => o.Postulaciones)
+                    );
+
+                // 🔹 Filtrar por carrera y por ofertas activas
+                var ofertas = ofertasQuery
+                    .Where(o => o.FechaBaja == null &&
+                                o.OfertaCarreras.Any(oc => oc.IdCarrera == idCarreraCandidato))
+                    .OrderByDescending(o => o.FechaModificacion)
+                    .Take(limit)
+                    .ToList();
+
+                // 🔹 Mapear a DTO
+                var dto = new OfertaRecienteDTO
+                {
+                    CantidadOfertas = ofertas.Count,
+                    Ofertas = ofertas.Select(o => new OfertaDTO
+                    {
+                        Id = o.Id,
+                        Titulo = o.Titulo,
+                        Descripcion = o.Descripcion,
+                        NombreLocalidad = o.Localidad?.Nombre,
+                        NombreProvincia = o.Localidad?.Provincia?.Nombre,
+                        NombreEmpresa = o.PerfilEmpresa?.RazonSocial,
+                        TipoContrato = o.TipoContrato?.Codigo,
+                        Modalidad = o.Modalidad?.Codigo,
+                        FechaInicio = o.FechaInicio.ToString("dd/MM/yyyy"),
+                        FechaFin = o.FechaFin?.ToString("dd/MM/yyyy") ?? "",
+                        NombreCarrera = o.OfertaCarreras != null && o.OfertaCarreras.Any()
+                            ? string.Join(", ", o.OfertaCarreras.Select(oc => oc.Carrera?.Nombre))
+                            : null,
+                        CantidadPostulantes = o.Postulaciones?.Count ?? 0,
+                        CartaPresentacion = null,
+                        Observacion = null,
+                        PuedePostularse = true
+                    }).ToList()
+                };
+
+                return dto;
             }
             catch (ApiException) { throw; }
-            catch (Exception ex) { throw ex; }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al obtener ofertas recientes: {ex.Message}", ex);
+            }
         }
+
 
         /// <summary>
         /// Devuelve todas las publicaciones (ofertas) de una empresa según el email del usuario.
