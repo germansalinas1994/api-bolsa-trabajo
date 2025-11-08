@@ -70,6 +70,7 @@ namespace BussinessLogic.Services
                     perfilDTO.Email = usuario.Email;
                     perfilDTO.UsuarioActivo = usuario.Activo;
                     perfilDTO.IdRol = usuario.IdRol;
+                    perfilDTO.FotoPerfil = usuario.FotoPerfil;
                 }
 
                 // Agregar información del rol
@@ -180,6 +181,17 @@ namespace BussinessLogic.Services
                 perfilExistente.IdEstadoValidacion = perfilDTO.IdEstadoValidacion ?? perfilExistente.IdEstadoValidacion;
                 perfilExistente.FechaModificacion = DateTime.Now;
 
+                // Si se proporcionó una foto de perfil, actualizar en el usuario
+                if (perfilDTO.FotoPerfil != null)
+                {
+                    var usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(perfilExistente.IdUsuario);
+                    if (usuario != null)
+                    {
+                        usuario.FotoPerfil = perfilDTO.FotoPerfil;
+                        await _unitOfWork.GenericRepository<Usuario>().Update(usuario);
+                    }
+                }
+
                 await _unitOfWork.BeginTransactionAsync();
                 await _unitOfWork.GenericRepository<PerfilEmpresa>().Update(perfilExistente);
                 await _unitOfWork.CommitAsync();
@@ -216,6 +228,37 @@ namespace BussinessLogic.Services
 
             // Ofertas publicadas
             if (cantidadOfertas > 0) porcentaje += 10;
+
+            return Math.Min(porcentaje, 100); // Máximo 100%
+        }
+
+        public int CalcularPorcentaje(string email)
+        {
+            int porcentaje = 0;
+
+            // Obtener el usuario por email
+            Usuario usuario = _unitOfWork.GenericRepository<Usuario>()
+                .GetByCriteria(u => u.Email == email && u.FechaBaja == null)
+                .Result
+                .FirstOrDefault();
+
+            PerfilEmpresa perfil = _unitOfWork.GenericRepository<PerfilEmpresa>()
+                .GetByCriteria(p => p.IdUsuario == usuario.Id && p.FechaBaja == null)
+                .Result
+                .FirstOrDefault(); 
+
+            // Campos básicos (20 puntos cada uno)
+            if (!string.IsNullOrEmpty(perfil.Descripcion)) porcentaje += 25;
+            if (!string.IsNullOrEmpty(perfil.RazonSocial)) porcentaje += 20;
+            if (!string.IsNullOrEmpty(perfil.Cuit)) porcentaje += 15;
+            if (perfil.IdEstadoValidacion.HasValue) porcentaje += 10;
+
+            // Campos del usuario
+            if (usuario != null)
+            {
+                if (!string.IsNullOrEmpty(usuario.Nombre)) porcentaje += 10;
+                if (!string.IsNullOrEmpty(usuario.Email)) porcentaje += 10;
+            }
 
             return Math.Min(porcentaje, 100); // Máximo 100%
         }

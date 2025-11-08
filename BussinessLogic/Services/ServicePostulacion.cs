@@ -14,15 +14,17 @@ namespace BussinessLogic.Services
     {
         private readonly ServicePublicacion _servicePublicacion;
         private readonly ServiceEmail _serviceEmail;
+        private readonly ServiceNotificacion _serviceNotificacion;
 
         public ServicePostulacion(
       IUnitOfWork unitOfWork,
       ServicePublicacion servicePublicacion,
-      ServiceEmail serviceEmail)
+      ServiceEmail serviceEmail, ServiceNotificacion serviceNotificacion)
       : base(unitOfWork)
         {
             _servicePublicacion = servicePublicacion;
             _serviceEmail = serviceEmail;
+            _serviceNotificacion = serviceNotificacion;
         }
         public async Task CrearPostulacion(PostulacionDTO data, string email)
         {
@@ -61,6 +63,16 @@ namespace BussinessLogic.Services
                 //recupero el candidato
                 if (oferta == null)
                     throw new ApiException("La oferta no existe", (int)HttpStatusCode.NotFound);
+                
+                // Cargar la relación PerfilEmpresa para poder acceder al IdUsuario de la empresa
+                oferta = (await _unitOfWork.GenericRepository<Oferta>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        o => o.Id == oferta.Id,
+                        q => q.Include(o => o.PerfilEmpresa)
+                    )).FirstOrDefault();
+                
+                if (oferta?.PerfilEmpresa == null)
+                    throw new ApiException("No se pudo cargar la información de la empresa", (int)HttpStatusCode.NotFound);
 
 
                 Postulacion nuevaPostulacion = new();
@@ -97,6 +109,31 @@ namespace BussinessLogic.Services
 
                 EnviarMailNotificacionPostulacion(perfilCandidato, oferta, estadoIniciada);
 
+
+                // Crear notificación para la empresa
+                try
+                {
+                    var usuarioEmpresa = await _unitOfWork.GenericRepository<Usuario>()
+                        .GetByCriteria(u => u.Id == oferta.PerfilEmpresa.IdUsuario && u.FechaBaja == null);
+                    
+                    if (usuarioEmpresa.Any())
+                    {
+                        var notificacionDTO = new CrearNotificacionDTO
+                        {
+                            IdUsuario = usuarioEmpresa.First().Id,
+                            Asunto = "Nueva postulación recibida",
+                            Mensaje = $"Has recibido una nueva postulación para la oferta '{oferta.Titulo}'.",
+                            IdPostulacion = postulacionPersistida.Id
+                        };
+                        
+                        await _serviceNotificacion.CrearNotificacion(notificacionDTO);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log error pero no fallar la postulación si falla la notificación
+                    Console.WriteLine($"Error al crear notificación: {ex.Message}");
+                }
 
 
             }
@@ -449,6 +486,7 @@ namespace BussinessLogic.Services
                         .OrderByDescending(h => h.FechaAlta)
                         .FirstOrDefault()?.EstadoPostulacion?.Nombre ?? "Sin estado",
                     Observacion = p.Observacion,
+                    CartaPresentacion = p.CartaPresentacion,
                     FechaPostulacion = p.FechaAlta,
 
                     // Candidato
@@ -540,7 +578,29 @@ namespace BussinessLogic.Services
 
                 await _unitOfWork.GenericRepository<PostulacionHistorial>().Insert(historial);
 
-                // 5️⃣ Guardar cambios y confirmar transacción
+                // 5️⃣ Obtener información del candidato para enviar notificación
+                var perfilCandidato = (await _unitOfWork.GenericRepository<PerfilCandidato>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        pc => pc.Id == postulacion.IdPerfilCandidato && pc.FechaBaja == null,
+                        q => q.Include(pc => pc.Usuario)
+                    ))
+                    .FirstOrDefault();
+
+                if (perfilCandidato?.Usuario != null)
+                {
+                    // Crear notificación para el candidato
+                    var notificacionDTO = new CrearNotificacionDTO
+                    {
+                        IdUsuario = perfilCandidato.IdUsuario,
+                        Asunto = $"Cambio de estado en tu postulación",
+                        Mensaje = $"Tu postulación para la oferta '{postulacion.Oferta?.Titulo ?? "Sin título"}' ha cambiado a: {estado.Nombre}",
+                        IdPostulacion = postulacion.Id
+                    };
+
+                    await _serviceNotificacion.CrearNotificacion(notificacionDTO);
+                }
+
+                // 6️⃣ Guardar cambios y confirmar transacción
                 await _unitOfWork.CommitAsync();
                 commitRealizado = true;
             }

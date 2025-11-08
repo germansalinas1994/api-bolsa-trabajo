@@ -12,8 +12,11 @@ namespace BussinessLogic.Services
 {
     public class ServiceCandidato : GenericService
     {
-        public ServiceCandidato(IUnitOfWork unitOfWork) : base(unitOfWork)
+        private readonly ServiceNotificacion _serviceNotificacion;
+
+        public ServiceCandidato(IUnitOfWork unitOfWork, ServiceNotificacion serviceNotificacion) : base(unitOfWork)
         {
+            _serviceNotificacion = serviceNotificacion;
         }
 
         public async Task<PerfilCandidatoDTO> GetPerfilById(int perfilId)
@@ -258,6 +261,48 @@ namespace BussinessLogic.Services
                 await _unitOfWork.GenericRepository<PerfilCandidato>().Update(perfilExistente);
                 await _unitOfWork.CommitAsync();
 
+                // Crear notificación al estudiante sobre la actualización de su perfil
+                try
+                {
+                    // Solo notificar si hubo cambios significativos
+                    bool cambiosSignificativos = 
+                        !string.IsNullOrEmpty(perfilDTO.Cv) ||
+                        perfilDTO.IdCarrera.HasValue ||
+                        perfilDTO.IdGenero.HasValue ||
+                        !string.IsNullOrEmpty(perfilDTO.Descripcion);
+
+                    if (cambiosSignificativos)
+                    {
+                        // Buscar una postulación activa del candidato para asociar a la notificación
+                        var postulacionActiva = (await _unitOfWork.GenericRepository<Postulacion>()
+                            .GetByCriteria(p => p.IdPerfilCandidato == perfilExistente.Id && p.FechaBaja == null))
+                            .OrderByDescending(p => p.FechaModificacion)
+                            .FirstOrDefault();
+
+                        if (postulacionActiva != null)
+                        {
+                            var usuario = await _unitOfWork.GenericRepository<Usuario>().GetById(perfilExistente.IdUsuario);
+                            if (usuario != null)
+                            {
+                                var notificacionDTO = new CrearNotificacionDTO
+                                {
+                                    IdUsuario = usuario.Id,
+                                    Asunto = "Perfil actualizado correctamente",
+                                    Mensaje = "Tu perfil ha sido actualizado exitosamente. Los cambios serán visibles para las empresas.",
+                                    IdPostulacion = postulacionActiva.Id
+                                };
+
+                                await _serviceNotificacion.CrearNotificacion(notificacionDTO);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log error pero no fallar la actualización si falla la notificación
+                    Console.WriteLine($"Error al crear notificación de actualización de perfil: {ex.Message}");
+                }
+
                 // Retornar el perfil actualizado
                 return await GetPerfilByUsuarioId(perfilExistente.IdUsuario);
             }
@@ -443,6 +488,33 @@ namespace BussinessLogic.Services
                 throw new ApiException(ex);
             }
         }
+
+        public async Task<int> CalcularPorcentaje(string email)
+        {
+            int porcentaje = 0;
+
+            Usuario usuario = (await _unitOfWork.GenericRepository<Usuario>()
+                    .GetByCriteria(u => u.Email == email)).FirstOrDefault();
+            var perfil = (await _unitOfWork.GenericRepository<PerfilCandidato>()
+                    .GetByCriteria(p => p.IdUsuario == usuario.Id)).FirstOrDefault();
+
+            // Campos básicos (20 puntos cada uno)
+            if (!string.IsNullOrEmpty(perfil.Descripcion)) porcentaje += 20;
+            if (!string.IsNullOrEmpty(perfil.Legajo)) porcentaje += 15;
+            if (perfil.AnioEgreso.HasValue) porcentaje += 15;
+            if (perfil.IdGenero.HasValue) porcentaje += 10;
+            if (perfil.Cv != null && perfil.Cv.Length > 0) porcentaje += 25;
+            
+            // Campos del usuario
+            if (perfil != null)
+            {
+                if (!string.IsNullOrEmpty(usuario.Nombre)) porcentaje += 10;
+                if (!string.IsNullOrEmpty(usuario.Email)) porcentaje += 5;
+            }
+
+            return Math.Min(porcentaje, 100); // Máximo 100%
+        }
+
     }
 }
 

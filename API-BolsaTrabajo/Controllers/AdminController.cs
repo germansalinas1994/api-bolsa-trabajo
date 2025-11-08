@@ -139,6 +139,25 @@ public class AdminController : GenericController
         }
     }
 
+    [HttpGet]
+    [Route("get_dashboard_empresa")]
+    public async Task<ApiResponse> GetDashboardAdmin()
+    {
+        try
+        {
+            var dashboard = await _service.GetDashboardAdmin();
+            return new ApiResponse(dashboard);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException("Error al obtener datos del dashboard de empresa", 500, ex.Message);
+        }
+    }
+
 
 }
 

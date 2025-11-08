@@ -13,7 +13,7 @@ namespace API_Client.Controllers
     [Route("api/[controller]")]
     public class GenericController : Controller
     { //Instancio el service que vamos a usar
-        private GenericService _service;
+        protected GenericService _service;
 
         //Inyecto el service por el constructor
         public GenericController(GenericService service)

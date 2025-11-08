@@ -91,10 +91,11 @@ builder.Services.AddDbContext<DbBolsaTrabajoContext>(options => options.UseSqlSe
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<GenericService, GenericService>();
 builder.Services.AddScoped<ServicePublicacion>();
+builder.Services.AddScoped<ServiceNotificacion>();
+builder.Services.AddScoped<ServiceNotificacion>();
 builder.Services.AddScoped<ServicePostulacion>();
 builder.Services.AddScoped<ServiceCandidato>();
 builder.Services.AddScoped<ServiceEmpresa>();
-builder.Services.AddScoped<ServiceAdmin>();
 builder.Services.AddScoped<ServiceEmail>();
 
 

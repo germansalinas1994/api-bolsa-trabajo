@@ -65,8 +65,9 @@ namespace API_Client.Controllers
         {
             try
             { //aca puedo agregar validaciones, por ejemplo que el limit no sea negativo o cero
+                string email = UserEmailFromJWT();
                 if (limit <= 0) throw new ApiException("El parámetro 'limit' debe ser mayor a 0.", (int)HttpStatusCode.BadRequest); // con esto me devuelve un 400
-                OfertaRecienteDTO ofertas = await _service.GetRecientes(limit);
+                OfertaRecienteDTO ofertas = await _service.GetRecientes(email, limit);
                 return new ApiResponse("Ofertas encontradas", ofertas);
             }
             catch (ApiException) { throw; }
