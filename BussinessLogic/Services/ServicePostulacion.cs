@@ -577,7 +577,29 @@ namespace BussinessLogic.Services
 
                 await _unitOfWork.GenericRepository<PostulacionHistorial>().Insert(historial);
 
-                // 5️⃣ Guardar cambios y confirmar transacción
+                // 5️⃣ Obtener información del candidato para enviar notificación
+                var perfilCandidato = (await _unitOfWork.GenericRepository<PerfilCandidato>()
+                    .GetByCriteriaIncludingSpecificRelations(
+                        pc => pc.Id == postulacion.IdPerfilCandidato && pc.FechaBaja == null,
+                        q => q.Include(pc => pc.Usuario)
+                    ))
+                    .FirstOrDefault();
+
+                if (perfilCandidato?.Usuario != null)
+                {
+                    // Crear notificación para el candidato
+                    var notificacionDTO = new CrearNotificacionDTO
+                    {
+                        IdUsuario = perfilCandidato.IdUsuario,
+                        Asunto = $"Cambio de estado en tu postulación",
+                        Mensaje = $"Tu postulación para la oferta '{postulacion.Oferta?.Titulo ?? "Sin título"}' ha cambiado a: {estado.Nombre}",
+                        IdPostulacion = postulacion.Id
+                    };
+
+                    await _serviceNotificacion.CrearNotificacion(notificacionDTO);
+                }
+
+                // 6️⃣ Guardar cambios y confirmar transacción
                 await _unitOfWork.CommitAsync();
                 commitRealizado = true;
             }
