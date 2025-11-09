@@ -34,6 +34,8 @@ namespace BussinessLogic.DTO
         // dato extra para vista de empresa
         public int? CantidadPostulantes { get; set; }
 
+        // Cupos disponibles para la oferta
+        public int? Cupos { get; set; }
 
         //datos para postularse
         public string? CartaPresentacion { get; set; }

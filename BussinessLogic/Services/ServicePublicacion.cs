@@ -56,7 +56,7 @@ namespace BussinessLogic.Services
                 PerfilEmpresa perfil = (await _unitOfWork.GenericRepository<PerfilEmpresa>().GetByCriteria(p => p.IdUsuario == usuario.Id)).FirstOrDefault();
                 List<Oferta> ofertas = (await _unitOfWork.GenericRepository<Oferta>()
                     .GetAllIncludingSpecificRelations(
-                        q => q.Where(o => o.IdPerfilEmpresa == perfil.Id)
+                        q => q.Where(o => o.IdPerfilEmpresa == perfil.Id && o.FechaBaja == null)
                         .Include(pe => pe.PerfilEmpresa)
                         .ThenInclude(u => u.Usuario)
                         .Include(m => m.Modalidad)
@@ -67,7 +67,38 @@ namespace BussinessLogic.Services
                     )
                 ).OrderByDescending(p => p.FechaModificacion).ToList();
 
-                return ofertas.Adapt<List<OfertaDTO>>();
+                var ofertasDTO = ofertas.Adapt<List<OfertaDTO>>();
+
+                // Agregar cupos desde OfertaHistorial y contar postulaciones aprobadas
+                foreach (var ofertaDTO in ofertasDTO)
+                {
+                    // Obtener cupos del último historial activo
+                    var historial = (await _unitOfWork.GenericRepository<OfertaHistorial>()
+                        .GetByCriteria(h => h.IdOferta == ofertaDTO.Id && h.FechaBaja == null))
+                        .OrderByDescending(h => h.FechaModificacion)
+                        .FirstOrDefault();
+
+                    ofertaDTO.Cupos = historial?.Cupos ?? 1;
+
+                    // Contar postulaciones con ÚLTIMO estado Aprobado
+                    var todosHistoriales = (await _unitOfWork.GenericRepository<PostulacionHistorial>()
+                        .GetAllIncludingSpecificRelations(
+                            q => q.Include(ph => ph.Postulacion)
+                        ))
+                        .Where(ph => ph.Postulacion != null 
+                                  && ph.Postulacion.IdOferta == ofertaDTO.Id 
+                                  && ph.FechaBaja == null);
+
+                    // Agrupar por postulación y tomar solo el último estado de cada una
+                    var ultimosEstados = todosHistoriales
+                        .GroupBy(ph => ph.IdPostulacion)
+                        .Select(g => g.OrderByDescending(ph => ph.FechaModificacion).First())
+                        .Where(ph => ph.IdEstadoPostulacion == EstadoPostulacion.IdEstadoAprobada);
+
+                    ofertaDTO.CantidadPostulantes = ultimosEstados.Count();
+                }
+
+                return ofertasDTO;
             }
             catch (ApiException)
             {
@@ -83,6 +114,12 @@ namespace BussinessLogic.Services
         {
             try
             {
+                // Validar que la fecha de inicio esté presente al crear
+                if (!data.FechaInicio.HasValue)
+                {
+                    throw new ApiException("La fecha de inicio es obligatoria al crear una oferta", (int)HttpStatusCode.BadRequest);
+                }
+
                 Usuario usuario = (await _unitOfWork.GenericRepository<Usuario>().GetByCriteria(e => e.Email == email)).FirstOrDefault();
                 if (usuario == null)
                     throw new ApiException("no existe el usuario", (int)HttpStatusCode.NotFound);
@@ -104,6 +141,26 @@ namespace BussinessLogic.Services
                 oferta.FechaModificacion = DateTime.Now;
                 oferta.IdPerfilEmpresa = perfil.Id;
                 await _unitOfWork.GenericRepository<Oferta>().Insert(oferta);
+
+                // Crear registro en OfertaHistorial con el estado y cupos
+                var estadoPublicada = await _unitOfWork.GenericRepository<EstadoOferta>()
+                    .GetByCriteria(e => e.Codigo == "PUBLICADA")
+                    .ContinueWith(t => t.Result.FirstOrDefault());
+
+                if (estadoPublicada != null)
+                {
+                    var ofertaHistorial = new OfertaHistorial
+                    {
+                        IdOferta = oferta.Id,
+                        IdEstadoOferta = estadoPublicada.Id,
+                        Cupos = data.Cupos ?? 1, // Por defecto 1 cupo
+                        Motivo = "Publicación inicial",
+                        FechaAlta = DateTime.Now,
+                        FechaModificacion = DateTime.Now
+                    };
+                    await _unitOfWork.GenericRepository<OfertaHistorial>().Insert(ofertaHistorial);
+                }
+
                 await _unitOfWork.CommitAsync();
 
                 // Obtener la oferta creada con todas las relaciones
@@ -118,7 +175,13 @@ namespace BussinessLogic.Services
                         .ThenInclude(p => p.Pais)
                     );
 
-                return ofertaCreada.Adapt<OfertaDTO>();
+                var ofertaDto = ofertaCreada.Adapt<OfertaDTO>();
+
+                // Agregar cupos del historial (recién creado)
+                ofertaDto.Cupos = data.Cupos ?? 1;
+                ofertaDto.CantidadPostulantes = 0; // Nueva oferta, sin postulantes
+
+                return ofertaDto;
             }
             catch (ApiException)
             {
@@ -140,17 +203,51 @@ namespace BussinessLogic.Services
                     throw new ApiException("Oferta no encontrada", (int)HttpStatusCode.NotFound);
                 }
 
-                // Actualizar propiedades
-                ofertaExistente.Titulo = data.Titulo;
-                ofertaExistente.Descripcion = data.Descripcion;
-                ofertaExistente.IdModalidad = data.IdModalidad ?? ofertaExistente.IdModalidad;
-                ofertaExistente.IdTipoContrato = data.IdTipoContrato ?? ofertaExistente.IdTipoContrato;
-                ofertaExistente.IdLocalidad = data.IdLocalidad ?? ofertaExistente.IdLocalidad;
-                ofertaExistente.FechaInicio = data.FechaInicio ?? ofertaExistente.FechaInicio;
-                ofertaExistente.FechaFin = data.FechaFin ?? ofertaExistente.FechaFin;
+                // Actualizar propiedades (solo si se proporcionan)
+                // Título y descripción siempre se actualizan porque son campos obligatorios
+                if (!string.IsNullOrEmpty(data.Titulo))
+                    ofertaExistente.Titulo = data.Titulo;
+                
+                if (!string.IsNullOrEmpty(data.Descripcion))
+                    ofertaExistente.Descripcion = data.Descripcion;
+                
+                // Los demás campos solo se actualizan si se proporcionan
+                if (data.IdModalidad.HasValue)
+                    ofertaExistente.IdModalidad = data.IdModalidad.Value;
+                
+                if (data.IdTipoContrato.HasValue)
+                    ofertaExistente.IdTipoContrato = data.IdTipoContrato.Value;
+                
+                if (data.IdLocalidad.HasValue)
+                    ofertaExistente.IdLocalidad = data.IdLocalidad.Value;
+                
+                // Las fechas solo se actualizan si se proporcionan (para permitir edición sin modificar fechas)
+                if (data.FechaInicio.HasValue)
+                    ofertaExistente.FechaInicio = data.FechaInicio.Value;
+                
+                if (data.FechaFin.HasValue)
+                    ofertaExistente.FechaFin = data.FechaFin.Value;
+                
                 ofertaExistente.FechaModificacion = DateTime.Now;
 
                 await _unitOfWork.GenericRepository<Oferta>().Update(ofertaExistente);
+                
+                // Actualizar cupos en OfertaHistorial si se proporciona
+                if (data.Cupos.HasValue)
+                {
+                    var ultimoHistorial = (await _unitOfWork.GenericRepository<OfertaHistorial>()
+                        .GetByCriteria(h => h.IdOferta == id && h.FechaBaja == null))
+                        .OrderByDescending(h => h.FechaModificacion)
+                        .FirstOrDefault();
+
+                    if (ultimoHistorial != null)
+                    {
+                        ultimoHistorial.Cupos = data.Cupos.Value;
+                        ultimoHistorial.FechaModificacion = DateTime.Now;
+                        await _unitOfWork.GenericRepository<OfertaHistorial>().Update(ultimoHistorial);
+                    }
+                }
+                
                 await _unitOfWork.CommitAsync();
 
                 // Obtener la oferta actualizada con todas las relaciones
@@ -165,7 +262,34 @@ namespace BussinessLogic.Services
                         .ThenInclude(p => p.Pais)
                     );
 
-                return ofertaActualizada.Adapt<OfertaDTO>();
+                var ofertaDto = ofertaActualizada.Adapt<OfertaDTO>();
+
+                // Agregar cupos del último historial activo
+                var historial = (await _unitOfWork.GenericRepository<OfertaHistorial>()
+                    .GetByCriteria(h => h.IdOferta == id && h.FechaBaja == null))
+                    .OrderByDescending(h => h.FechaModificacion)
+                    .FirstOrDefault();
+
+                ofertaDto.Cupos = historial?.Cupos ?? 1;
+
+                // Contar postulaciones con ÚLTIMO estado Aprobado
+                var todosHistoriales = (await _unitOfWork.GenericRepository<PostulacionHistorial>()
+                    .GetAllIncludingSpecificRelations(
+                        q => q.Include(ph => ph.Postulacion)
+                    ))
+                    .Where(ph => ph.Postulacion != null 
+                              && ph.Postulacion.IdOferta == id 
+                              && ph.FechaBaja == null);
+
+                // Agrupar por postulación y tomar solo el último estado de cada una
+                var ultimosEstados = todosHistoriales
+                    .GroupBy(ph => ph.IdPostulacion)
+                    .Select(g => g.OrderByDescending(ph => ph.FechaModificacion).First())
+                    .Where(ph => ph.IdEstadoPostulacion == EstadoPostulacion.IdEstadoAprobada);
+
+                ofertaDto.CantidadPostulantes = ultimosEstados.Count();
+
+                return ofertaDto;
             }
             catch (ApiException)
             {
@@ -267,6 +391,31 @@ namespace BussinessLogic.Services
                     ofertaDto.PuedePostularse = true;
                 }
 
+                // Obtener cupos del último historial activo
+                var historial = (await _unitOfWork.GenericRepository<OfertaHistorial>()
+                    .GetByCriteria(h => h.IdOferta == id && h.FechaBaja == null))
+                    .OrderByDescending(h => h.FechaModificacion)
+                    .FirstOrDefault();
+
+                ofertaDto.Cupos = historial?.Cupos ?? 1;
+
+                // Contar postulaciones con ÚLTIMO estado Aprobado
+                var todosHistoriales = (await _unitOfWork.GenericRepository<PostulacionHistorial>()
+                    .GetAllIncludingSpecificRelations(
+                        q => q.Include(ph => ph.Postulacion)
+                    ))
+                    .Where(ph => ph.Postulacion != null 
+                              && ph.Postulacion.IdOferta == id 
+                              && ph.FechaBaja == null);
+
+                // Agrupar por postulación y tomar solo el último estado de cada una
+                var ultimosEstados = todosHistoriales
+                    .GroupBy(ph => ph.IdPostulacion)
+                    .Select(g => g.OrderByDescending(ph => ph.FechaModificacion).First())
+                    .Where(ph => ph.IdEstadoPostulacion == EstadoPostulacion.IdEstadoAprobada);
+
+                ofertaDto.CantidadPostulantes = ultimosEstados.Count();
+
                 return ofertaDto;
             }
             catch (ApiException)
@@ -324,6 +473,31 @@ namespace BussinessLogic.Services
 
                     //si esta postulado, no puede postularse
                     dto.PuedePostularse = !postulado;
+
+                    // Obtener cupos del último historial activo
+                    var historial = (await _unitOfWork.GenericRepository<OfertaHistorial>()
+                        .GetByCriteria(h => h.IdOferta == dto.Id && h.FechaBaja == null))
+                        .OrderByDescending(h => h.FechaModificacion)
+                        .FirstOrDefault();
+
+                    dto.Cupos = historial?.Cupos ?? 1;
+
+                    // Contar postulaciones con ÚLTIMO estado Aprobado
+                    var todosHistoriales = (await _unitOfWork.GenericRepository<PostulacionHistorial>()
+                        .GetAllIncludingSpecificRelations(
+                            q => q.Include(ph => ph.Postulacion)
+                        ))
+                        .Where(ph => ph.Postulacion != null 
+                                  && ph.Postulacion.IdOferta == dto.Id 
+                                  && ph.FechaBaja == null);
+
+                    // Agrupar por postulación y tomar solo el último estado de cada una
+                    var ultimosEstados = todosHistoriales
+                        .GroupBy(ph => ph.IdPostulacion)
+                        .Select(g => g.OrderByDescending(ph => ph.FechaModificacion).First())
+                        .Where(ph => ph.IdEstadoPostulacion == EstadoPostulacion.IdEstadoAprobada);
+
+                    dto.CantidadPostulantes = ultimosEstados.Count();
                 }
 
                 return ofertasDto;
@@ -477,26 +651,54 @@ namespace BussinessLogic.Services
                             .Include(m => m.Modalidad)
                             .Include(t => t.TipoContrato)
                             .Include(l => l.Localidad).ThenInclude(p => p.Provincia)
-                            .Include(o => o.OfertaCarreras).ThenInclude(oc => oc.Carrera) // Incluye carreras
-                            .Include(o => o.Postulaciones) // Incluye postulaciones
+                            .Include(o => o.OfertaCarreras).ThenInclude(oc => oc.Carrera)
                     ))
                     .ToList();
 
-                // 🔹 Mapeo manual al DTO para agregar carrera y cantidad de postulantes
-                var resultado = publicaciones.Select(o => new OfertaDTO
+                // 🔹 Mapeo manual al DTO
+                var resultado = new List<OfertaDTO>();
+                
+                foreach (var o in publicaciones)
                 {
-                    Id = o.Id,
-                    Titulo = o.Titulo,
-                    Descripcion = o.Descripcion,
-                    Modalidad = o.Modalidad?.Nombre,
-                    TipoContrato = o.TipoContrato?.Nombre,
-                    NombreEmpresa = o.PerfilEmpresa?.RazonSocial,
-                    NombreLocalidad = o.Localidad?.Nombre,
-                    NombreCarrera = o.OfertaCarreras.FirstOrDefault()?.Carrera?.Nombre ?? "Carrera no especificada",
-                    CantidadPostulantes = o.Postulaciones?.Count() ?? 0,
-                    FechaInicio = o.FechaInicio.ToString("yyyy-MM-dd"),
-                    FechaFin = o.FechaFin?.ToString("yyyy-MM-dd"),
-                }).ToList();
+                    // Obtener cupos del último historial activo
+                    var historial = (await _unitOfWork.GenericRepository<OfertaHistorial>()
+                        .GetByCriteria(h => h.IdOferta == o.Id && h.FechaBaja == null))
+                        .OrderByDescending(h => h.FechaModificacion)
+                        .FirstOrDefault();
+
+                    // Contar postulaciones con ÚLTIMO estado Aprobado
+                    var todosHistoriales = (await _unitOfWork.GenericRepository<PostulacionHistorial>()
+                        .GetAllIncludingSpecificRelations(
+                            q => q.Include(ph => ph.Postulacion)
+                        ))
+                        .Where(ph => ph.Postulacion != null 
+                                  && ph.Postulacion.IdOferta == o.Id 
+                                  && ph.FechaBaja == null);
+
+                    // Agrupar por postulación y tomar solo el último estado de cada una
+                    var ultimosEstados = todosHistoriales
+                        .GroupBy(ph => ph.IdPostulacion)
+                        .Select(g => g.OrderByDescending(ph => ph.FechaModificacion).First())
+                        .Where(ph => ph.IdEstadoPostulacion == EstadoPostulacion.IdEstadoAprobada);
+
+                    var ofertaDto = new OfertaDTO
+                    {
+                        Id = o.Id,
+                        Titulo = o.Titulo,
+                        Descripcion = o.Descripcion,
+                        Modalidad = o.Modalidad?.Nombre,
+                        TipoContrato = o.TipoContrato?.Nombre,
+                        NombreEmpresa = o.PerfilEmpresa?.RazonSocial,
+                        NombreLocalidad = o.Localidad?.Nombre,
+                        NombreCarrera = o.OfertaCarreras.FirstOrDefault()?.Carrera?.Nombre ?? "Carrera no especificada",
+                        Cupos = historial?.Cupos ?? 1,
+                        CantidadPostulantes = ultimosEstados.Count(),
+                        FechaInicio = o.FechaInicio.ToString("yyyy-MM-dd"),
+                        FechaFin = o.FechaFin?.ToString("yyyy-MM-dd"),
+                    };
+                    
+                    resultado.Add(ofertaDto);
+                }
 
                 return resultado;
             }

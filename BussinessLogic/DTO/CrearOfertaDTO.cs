@@ -17,12 +17,16 @@ namespace BussinessLogic.DTO
         [Required(ErrorMessage = "El ID de tipo de contrato es obligatorio")]
         public int? IdTipoContrato { get; set; }
 
-        [Required(ErrorMessage = "La fecha de inicio es obligatoria")]
+        // FechaInicio es requerida solo al crear, no al actualizar
         public DateTime? FechaInicio { get; set; }
 
         public DateTime? FechaFin { get; set; }
 
         public int? IdLocalidad { get; set; }
+
+        [Required(ErrorMessage = "Los cupos son obligatorios")]
+        [Range(1, int.MaxValue, ErrorMessage = "Debe haber al menos 1 cupo disponible")]
+        public int? Cupos { get; set; }
     }
 }
 
