@@ -18,6 +18,8 @@ public class PostulacionCandidatoDTO
     public int? AnioEgreso { get; set; }
     public string? Cv { get; set; }
 
+    public string? FotoPerfil { get; set; }
+
     // 🔹 Datos de la Oferta
     public int IdOferta { get; set; }
     public string? TituloOferta { get; set; }
