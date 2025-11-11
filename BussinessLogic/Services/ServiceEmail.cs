@@ -28,7 +28,7 @@ namespace BussinessLogic.Services
                 var clave = _config["EmailSettings:SmtpPasswordFactores"];
 
                 var email = new MimeMessage();
-                email.From.Add(new MailboxAddress("UTN Bolsa de Trabajo", remitente)); // 👈 nombre + mail
+                email.From.Add(new MailboxAddress("UTN Bolsa de Trabajo", remitente)); 
                 email.To.Add(MailboxAddress.Parse(destinatario));
                 email.Subject = asunto;
                 email.Body = new TextPart("html") { Text = cuerpoHtml };
@@ -49,7 +49,7 @@ namespace BussinessLogic.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error al enviar correo: {ex.Message}");
+                Console.WriteLine($"Error al enviar correo: {ex.Message}");
                 throw new Exception("Error al enviar el correo electrónico.", ex);
             }
         }
