@@ -63,14 +63,14 @@ namespace BussinessLogic.Services
                 //recupero el candidato
                 if (oferta == null)
                     throw new ApiException("La oferta no existe", (int)HttpStatusCode.NotFound);
-                
+
                 // Cargar la relación PerfilEmpresa para poder acceder al IdUsuario de la empresa
                 oferta = (await _unitOfWork.GenericRepository<Oferta>()
                     .GetByCriteriaIncludingSpecificRelations(
                         o => o.Id == oferta.Id,
                         q => q.Include(o => o.PerfilEmpresa)
                     )).FirstOrDefault();
-                
+
                 if (oferta?.PerfilEmpresa == null)
                     throw new ApiException("No se pudo cargar la información de la empresa", (int)HttpStatusCode.NotFound);
 
@@ -115,7 +115,7 @@ namespace BussinessLogic.Services
                 {
                     var usuarioEmpresa = await _unitOfWork.GenericRepository<Usuario>()
                         .GetByCriteria(u => u.Id == oferta.PerfilEmpresa.IdUsuario && u.FechaBaja == null);
-                    
+
                     if (usuarioEmpresa.Any())
                     {
                         var notificacionDTO = new CrearNotificacionDTO
@@ -125,7 +125,7 @@ namespace BussinessLogic.Services
                             Mensaje = $"Has recibido una nueva postulación para la oferta '{oferta.Titulo}'.",
                             IdPostulacion = postulacionPersistida.Id
                         };
-                        
+
                         await _serviceNotificacion.CrearNotificacion(notificacionDTO);
                     }
                 }
@@ -522,6 +522,91 @@ namespace BussinessLogic.Services
             }
         }
 
+
+        private async Task EnviarMailCambioEstadoPostulacion(
+            PerfilCandidato perfilCandidato,
+            Postulacion postulacion,
+            EstadoPostulacion estado)
+        {
+            var emailCandidato = perfilCandidato?.Usuario?.Email ?? "noreply@utnfrlp.edu.ar";
+            var nombreCandidato = perfilCandidato?.Usuario?.Nombre ?? "Postulante";
+            var tituloOferta = postulacion?.Oferta?.Titulo ?? "Oferta laboral";
+            var nombreEstado = estado?.Nombre ?? "Sin estado";
+
+            // Color sugerido por estado (ajustá nombres si difieren en tu tabla)
+            string ColorEstado(string n)
+            {
+                n = (n ?? "").ToLowerInvariant();
+                if (n.Contains("aprob") || n.Contains("acept") || n.Contains("contrat")) return "#16a34a"; // verde
+                if (n.Contains("rechaz")) return "#dc2626"; // rojo
+                if (n.Contains("entrevista") || n.Contains("revisión") || n.Contains("en revisión")) return "#2563eb"; // azul
+                if (n.Contains("pendiente") || n.Contains("iniciada")) return "#6b7280"; // gris
+                return "#0ea5e9"; // celeste default
+            }
+
+            var color = ColorEstado(nombreEstado);
+
+            string cuerpoHtml = $@"
+<html>
+  <body style='font-family: Arial, sans-serif; color:#333; background:#f5f5f5; padding:20px;'>
+    <table align='center' width='600' cellpadding='0' cellspacing='0'
+           style='background:#fff; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,.08);'>
+      <tr>
+        <td style='background:#003366; padding:20px; text-align:center;'>
+          <img src='https://www.frlp.utn.edu.ar/sites/default/files/LOGO%20VERTICAL_1.jpg'
+               alt='UTN FRLP' width='110' style='display:block;margin:auto;border-radius:4px;' />
+          <h2 style='color:#fff; margin:10px 0 0;'>Bolsa de Trabajo - UTN FRLP</h2>
+        </td>
+      </tr>
+
+      <tr>
+        <td style='padding:28px;'>
+          <p>Hola <b>{nombreCandidato}</b>,</p>
+          <p>Te informamos que el estado de tu postulación para la oferta
+             <b>“{tituloOferta}”</b> ha cambiado.</p>
+
+          <p style='margin:18px 0; font-size:16px;'>
+            Estado actual:
+            <span style='display:inline-block; padding:6px 10px; border-radius:6px;
+                         background:{color}15; color:{color}; font-weight:bold;'>
+              {nombreEstado}
+            </span>
+          </p>
+
+          <p>Puedes ingresar al portal para ver los detalles y próximos pasos.</p>
+
+          <div style='text-align:center; margin:26px 0 6px;'>
+            <a href='https://bolsadetrabajo.utnfrlp.edu.ar'
+               style='background:#003366; color:#fff; text-decoration:none; padding:10px 18px;
+                      border-radius:6px; display:inline-block; font-weight:bold;'>
+               Ir a la Bolsa de Trabajo
+            </a>
+          </div>
+
+          <p style='margin-top:28px; color:#666; font-size:13px;'>
+            Este es un mensaje automático. Por favor, no responda a este correo.
+          </p>
+        </td>
+      </tr>
+
+      <tr>
+        <td style='background:#f0f0f0; text-align:center; padding:14px; font-size:12px; color:#666;'>
+          © {DateTime.Now.Year} Universidad Tecnológica Nacional - Facultad Regional La Plata ·
+          <a href='https://www.frlp.utn.edu.ar' style='color:#003366; text-decoration:none;'>www.frlp.utn.edu.ar</a>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>";
+
+            string asunto = $"Tu postulación cambió de estado: {nombreEstado}";
+
+            await _serviceEmail.EnviarCorreoAsync(
+                destinatario: emailCandidato,
+                asunto: asunto,
+                cuerpoHtml: cuerpoHtml
+            );
+        }
         public async Task CambiarEstadoPostulacion(int idPostulacion, string nombreEstado, string emailEmpresa)
         {
             bool commitRealizado = false;
@@ -539,7 +624,7 @@ namespace BussinessLogic.Services
                     .FirstOrDefault();
 
                 if (empresa == null)
-                    throw new ApiException($"No se encontró ninguna empresa activa asociada al email '{emailEmpresa}'.", 
+                    throw new ApiException($"No se encontró ninguna empresa activa asociada al email '{emailEmpresa}'.",
                         (int)HttpStatusCode.NotFound);
 
                 // 2️⃣ Validar que la postulación exista y pertenezca a una oferta de la empresa
@@ -551,11 +636,11 @@ namespace BussinessLogic.Services
                     .FirstOrDefault();
 
                 if (postulacion == null)
-                    throw new ApiException($"No se encontró la postulación con ID {idPostulacion}.", 
+                    throw new ApiException($"No se encontró la postulación con ID {idPostulacion}.",
                         (int)HttpStatusCode.NotFound);
 
                 if (postulacion.Oferta == null || postulacion.Oferta.IdPerfilEmpresa != empresa.Id)
-                    throw new ApiException("La postulación no pertenece a una oferta publicada por esta empresa.", 
+                    throw new ApiException("La postulación no pertenece a una oferta publicada por esta empresa.",
                         (int)HttpStatusCode.Forbidden);
 
                 // 3️⃣ Buscar el estado por nombre (tabla EstadoPostulacion)
@@ -564,7 +649,7 @@ namespace BussinessLogic.Services
                     .FirstOrDefault();
 
                 if (estado == null)
-                    throw new ApiException($"No se encontró un estado con el nombre '{nombreEstado}'.", 
+                    throw new ApiException($"No se encontró un estado con el nombre '{nombreEstado}'.",
                         (int)HttpStatusCode.NotFound);
 
                 // 4️⃣ Crear nuevo registro en PostulacionHistorial
@@ -600,6 +685,8 @@ namespace BussinessLogic.Services
                     };
 
                     await _serviceNotificacion.CrearNotificacion(notificacionDTO);
+                    EnviarMailCambioEstadoPostulacion(perfilCandidato, postulacion, estado);
+
                 }
 
                 // 6️⃣ Guardar cambios y confirmar transacción
