@@ -476,6 +476,9 @@ namespace BussinessLogic.Services
                                 .ThenInclude(pc => pc.Carrera)
                             .Include(p => p.PerfilCandidato)
                                 .ThenInclude(pc => pc.Genero)
+                            .Include(p => p.PerfilCandidato)
+                                .ThenInclude(pc => pc.CompetenciasPerfilCandidato)
+                                    .ThenInclude(cpc => cpc.Competencia)
                     )).ToList();
 
                 var result = postulaciones.Select(p => new PostulacionCandidatoDTO
@@ -498,8 +501,13 @@ namespace BussinessLogic.Services
                     CarreraNombre = p.PerfilCandidato?.Carrera?.Nombre,
                     AnioEgreso = p.PerfilCandidato?.AnioEgreso,
                     Cv = p.PerfilCandidato?.Cv != null ? Convert.ToBase64String(p.PerfilCandidato.Cv) : null,
+                    FotoPerfil = p.PerfilCandidato?.Usuario?.FotoPerfil,
 
-                    FotoPerfil = p.PerfilCandidato.Usuario.FotoPerfil != null ? p.PerfilCandidato.Usuario.FotoPerfil : null,
+                    // Competencias
+                    Competencias = p.PerfilCandidato?.CompetenciasPerfilCandidato?
+                        .Select(cpc => cpc.Competencia?.Nombre ?? "")
+                        .Where(nombre => !string.IsNullOrEmpty(nombre))
+                        .ToList(),
 
                     // Oferta
                     IdOferta = p.Oferta?.Id ?? 0,
@@ -521,6 +529,7 @@ namespace BussinessLogic.Services
                 throw new Exception($"Error al obtener postulaciones de la empresa: {ex.Message}", ex);
             }
         }
+
 
 
         private async Task EnviarMailCambioEstadoPostulacion(
