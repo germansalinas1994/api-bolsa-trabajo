@@ -38,6 +38,10 @@ public partial class DbBolsaTrabajoContext : DbContext
 
     public virtual DbSet<OfertaHistorial> OfertaHistorial { get; set; }
 
+    public virtual DbSet<Competencia> Competencia { get; set; }
+
+    public virtual DbSet<CompetenciaPerfilCandidato> CompetenciaPerfilCandidato { get; set; }
+
     public virtual DbSet<Pais> Pais { get; set; }
 
     public virtual DbSet<PerfilCandidato> PerfilCandidato { get; set; }
@@ -117,6 +121,17 @@ public partial class DbBolsaTrabajoContext : DbContext
             e.HasOne(x => x.Oferta)
             .WithMany()
             .HasForeignKey(x => x.IdOferta);
+        });
+
+        modelBuilder.Entity<CompetenciaPerfilCandidato>(e =>
+        {
+            e.HasOne(x => x.Competencia)
+                .WithMany(c => c.CompetenciasPerfilCandidato)
+                .HasForeignKey(x => x.IdCompetencia);
+
+            e.HasOne(x => x.PerfilCandidato)
+                .WithMany(p => p.CompetenciasPerfilCandidato)
+                .HasForeignKey(x => x.IdPerfilCandidato);
         });
 
         modelBuilder.Entity<OfertaHistorial>(e =>

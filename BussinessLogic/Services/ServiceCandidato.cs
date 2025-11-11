@@ -104,6 +104,23 @@ namespace BussinessLogic.Services
                     perfilDTO.Carrera = carrera.Nombre;
                 }
                 
+                // Obtener competencias del candidato
+                var competenciasPerfilCandidato = await _unitOfWork.GenericRepository<CompetenciaPerfilCandidato>()
+                    .GetByCriteria(cp => cp.IdPerfilCandidato == perfilId && cp.FechaBaja == null);
+                
+                if (competenciasPerfilCandidato.Any())
+                {
+                    var competenciasIds = competenciasPerfilCandidato.Select(cp => cp.IdCompetencia).ToList();
+                    var competencias = await _unitOfWork.GenericRepository<Competencia>()
+                        .GetByCriteria(c => competenciasIds.Contains(c.Id));
+                    
+                    perfilDTO.Competencias = competencias.Select(c => new CompetenciaDTO
+                    {
+                        Id = c.Id,
+                        Nombre = c.Nombre
+                    }).ToList();
+                }
+                
                 // Convertir CV de byte[] a string base64 si existe
                 if (perfilCandidato.Cv != null && perfilCandidato.Cv.Length > 0)
                 {
@@ -515,6 +532,118 @@ namespace BussinessLogic.Services
             return Math.Min(porcentaje, 100); // Máximo 100%
         }
 
+        // ========================================
+        // MÉTODOS DE GESTIÓN DE COMPETENCIAS
+        // ========================================
+        
+        public async Task<List<CompetenciaDTO>> GetAllCompetencias()
+        {
+            try
+            {
+                var competencias = await _unitOfWork.GenericRepository<Competencia>()
+                    .GetByCriteria(c => true);
+                
+                return competencias.Select(c => new CompetenciaDTO
+                {
+                    Id = c.Id,
+                    Nombre = c.Nombre
+                }).OrderBy(c => c.Nombre).ToList();
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException(ex);
+            }
+        }
+        
+        public async Task AddCompetenciaAPerfil(int perfilId, int competenciaId)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                
+                // Verificar que el perfil existe
+                var perfil = await _unitOfWork.GenericRepository<PerfilCandidato>().GetById(perfilId);
+                if (perfil == null || perfil.FechaBaja != null)
+                {
+                    throw new ApiException("Perfil de candidato no encontrado", 404);
+                }
+                
+                // Verificar que la competencia existe
+                var competencia = await _unitOfWork.GenericRepository<Competencia>().GetById(competenciaId);
+                if (competencia == null)
+                {
+                    throw new ApiException("Competencia no encontrada", 404);
+                }
+                
+                // Verificar que no exista ya la relación
+                var relaciones = await _unitOfWork.GenericRepository<CompetenciaPerfilCandidato>()
+                    .GetByCriteria(cp => cp.IdPerfilCandidato == perfilId && cp.IdCompetencia == competenciaId && cp.FechaBaja == null);
+                
+                if (relaciones.Any())
+                {
+                    throw new ApiException("El candidato ya tiene esta competencia", 400);
+                }
+                
+                // Crear la relación
+                var nuevaRelacion = new CompetenciaPerfilCandidato
+                {
+                    IdPerfilCandidato = perfilId,
+                    IdCompetencia = competenciaId,
+                    FechaAlta = DateTime.Now,
+                    FechaModificacion = DateTime.Now
+                };
+                
+                await _unitOfWork.GenericRepository<CompetenciaPerfilCandidato>().Insert(nuevaRelacion);
+                await _unitOfWork.CommitAsync();
+            }
+            catch (ApiException)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw new ApiException(ex);
+            }
+        }
+        
+        public async Task RemoveCompetenciaDePerfil(int perfilId, int competenciaId)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                
+                // Buscar la relación activa
+                var relaciones = await _unitOfWork.GenericRepository<CompetenciaPerfilCandidato>()
+                    .GetByCriteria(cp => cp.IdPerfilCandidato == perfilId && cp.IdCompetencia == competenciaId && cp.FechaBaja == null);
+                
+                var relacion = relaciones.FirstOrDefault();
+                if (relacion == null)
+                {
+                    throw new ApiException("La competencia no está asociada a este perfil", 404);
+                }
+                
+                // Soft delete
+                relacion.FechaBaja = DateTime.Now;
+                relacion.FechaModificacion = DateTime.Now;
+                
+                await _unitOfWork.GenericRepository<CompetenciaPerfilCandidato>().Update(relacion);
+                await _unitOfWork.CommitAsync();
+            }
+            catch (ApiException)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                throw new ApiException(ex);
+            }
+        }
+
     }
 }
+
 

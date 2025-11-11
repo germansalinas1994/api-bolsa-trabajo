@@ -31,4 +31,6 @@ public partial class PerfilCandidato
 
     public virtual Usuario Usuario { get; set; } = null!;
     public virtual Carrera? Carrera { get; set; } = null!;
+    
+    public virtual ICollection<CompetenciaPerfilCandidato> CompetenciasPerfilCandidato { get; set; } = new List<CompetenciaPerfilCandidato>();
 }
