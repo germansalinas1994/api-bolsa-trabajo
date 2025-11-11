@@ -486,11 +486,9 @@ namespace BussinessLogic.Services
                     // Postulación
                     IdPostulacion = p.Id,
                     EstadoPostulacion = p.Historial
-                        .OrderByDescending(h => h.FechaAlta)
                         .FirstOrDefault()?.EstadoPostulacion?.Nombre ?? "Sin estado",
 
                     Motivo = p.Historial
-                        .OrderByDescending(h => h.FechaAlta)
                         .FirstOrDefault()?.Motivo, // 👈 nuevo campo
 
                     Observacion = p.Observacion,
@@ -525,7 +523,7 @@ namespace BussinessLogic.Services
                     Localidad = p.Oferta?.Localidad?.Nombre,
                     Provincia = p.Oferta?.Localidad?.Provincia?.Nombre,
                     Pais = p.Oferta?.Localidad?.Provincia?.Pais?.Nombre,
-                }).ToList();
+                }).OrderByDescending(f => f.FechaPostulacion).ToList();
 
 
                 return result;
