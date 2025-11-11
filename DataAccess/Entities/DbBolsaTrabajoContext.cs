@@ -123,6 +123,17 @@ public partial class DbBolsaTrabajoContext : DbContext
             .HasForeignKey(x => x.IdOferta);
         });
 
+        modelBuilder.Entity<Competencia>(e =>
+        {
+            e.Property(x => x.Nombre)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            e.HasMany(x => x.CompetenciasPerfilCandidato)
+                .WithOne(cpc => cpc.Competencia)
+                .HasForeignKey(cpc => cpc.IdCompetencia);
+        });
+
         modelBuilder.Entity<CompetenciaPerfilCandidato>(e =>
         {
             e.HasOne(x => x.Competencia)
@@ -157,6 +168,10 @@ public partial class DbBolsaTrabajoContext : DbContext
         e.HasOne(x => x.Genero)
             .WithMany()
             .HasForeignKey(x => x.IdGenero);
+
+        e.HasMany(x => x.CompetenciasPerfilCandidato)
+            .WithOne(cpc => cpc.PerfilCandidato)
+            .HasForeignKey(cpc => cpc.IdPerfilCandidato);
     });
 
         modelBuilder.Entity<PerfilEmpresa>(e =>

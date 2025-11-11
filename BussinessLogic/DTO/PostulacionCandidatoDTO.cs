@@ -1,6 +1,5 @@
 public class PostulacionCandidatoDTO
 {
-
     // Datos de la Postulación
     public int IdPostulacion { get; set; }
     public string EstadoPostulacion { get; set; } = string.Empty;
@@ -17,8 +16,10 @@ public class PostulacionCandidatoDTO
     public string? CarreraNombre { get; set; }
     public int? AnioEgreso { get; set; }
     public string? Cv { get; set; }
-
     public string? FotoPerfil { get; set; }
+
+    // 🔹 Competencias del Candidato
+    public List<string>? Competencias { get; set; }
 
     // 🔹 Datos de la Oferta
     public int IdOferta { get; set; }
