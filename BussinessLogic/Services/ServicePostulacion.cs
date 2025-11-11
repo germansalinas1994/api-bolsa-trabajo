@@ -678,7 +678,7 @@ namespace BussinessLogic.Services
                 }
                 else
                 {
-                    motivo = "Interacción empresa";
+                    motivo = "Interacción empresa con la Postulación";
                 }
                 PostulacionHistorial historial = new()
                 {
