@@ -17,6 +17,7 @@ public class PostulacionCandidatoDTO
     public int? AnioEgreso { get; set; }
     public string? Cv { get; set; }
     public string? FotoPerfil { get; set; }
+    public string? Motivo { get; set; }
 
     // 🔹 Competencias del Candidato
     public List<string>? Competencias { get; set; }
