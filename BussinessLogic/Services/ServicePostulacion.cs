@@ -607,7 +607,7 @@ namespace BussinessLogic.Services
                 cuerpoHtml: cuerpoHtml
             );
         }
-        public async Task CambiarEstadoPostulacion(int idPostulacion, string nombreEstado, string emailEmpresa)
+        public async Task CambiarEstadoPostulacion(int idPostulacion, string nombreEstado, string emailEmpresa, string motivo)
         {
             bool commitRealizado = false;
 
@@ -653,11 +653,23 @@ namespace BussinessLogic.Services
                         (int)HttpStatusCode.NotFound);
 
                 // 4️⃣ Crear nuevo registro en PostulacionHistorial
+                if (estado.Id == EstadoPostulacion.IdEstadoRechazada || estado.Id == EstadoPostulacion.IdEstadoAprobada)
+                {
+                    if (string.IsNullOrWhiteSpace(motivo))
+                    {
+                        throw new ApiException("El motivo es obligatorio para los estados Aprobada o Rechazada.", (int)HttpStatusCode.BadRequest);
+                    }
+
+                }
+                else
+                {
+                    motivo = "Interacción empresa";
+                }
                 PostulacionHistorial historial = new()
                 {
                     IdPostulacion = postulacion.Id,
                     IdEstadoPostulacion = estado.Id,
-                    Motivo = "Interacción empresa",
+                    Motivo = motivo,
                     FechaAlta = DateTime.Now,
                     FechaModificacion = DateTime.Now,
                     FechaBaja = null

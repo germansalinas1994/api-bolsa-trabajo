@@ -168,18 +168,18 @@ namespace API_Client.Controllers
         [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
         public async Task<ApiResponse> CambiarEstadoPostulacion(
             int idPostulacion,
-            [FromBody] string nombreEstado)
+            [FromBody] CambioEstadoRequest cambioEstadoRequest)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(nombreEstado))
+                if (string.IsNullOrWhiteSpace(cambioEstadoRequest.NombreEstado))
                     throw new ApiException("El nombre del estado es obligatorio.", (int)HttpStatusCode.BadRequest);
 
                 // 📩 Recuperar el email de la empresa desde el token JWT
                 string emailEmpresa = UserEmailFromJWT();
 
                 // 🧩 Ejecutar lógica de negocio
-                await _service.CambiarEstadoPostulacion(idPostulacion, nombreEstado, emailEmpresa);
+                await _service.CambiarEstadoPostulacion(idPostulacion, cambioEstadoRequest.NombreEstado, emailEmpresa, cambioEstadoRequest.Motivo);
 
                 return new ApiResponse("Estado actualizado correctamente.");
             }
@@ -194,4 +194,11 @@ namespace API_Client.Controllers
             }
         }
     }
+}
+
+
+public class CambioEstadoRequest
+{
+    public string NombreEstado { get; set; }
+    public string Motivo { get; set; }
 }
