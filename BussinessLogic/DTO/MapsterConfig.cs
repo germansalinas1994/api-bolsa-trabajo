@@ -69,7 +69,10 @@ namespace BussinessLogic.DTO
                     s => s.Historial != null ? s.Historial.OrderByDescending(h => h.FechaModificacion)
                             .Select(h => h.EstadoPostulacion.Nombre)
                             .FirstOrDefault() : string.Empty)
-
+                .Map(d => d.Motivo,
+                    s => s.Historial != null ? s.Historial.OrderByDescending(h => h.FechaModificacion)
+                            .Select(h => h.Motivo)
+                            .FirstOrDefault() : null)
                 .Map(d => d.FechaPostulacion, s => s.FechaAlta.ToString("dd/MM/yyyy"))
 
                 // Mapeos de Oferta y relaciones

@@ -15,6 +15,7 @@ namespace BussinessLogic.DTO
 
         public string? EstadoPostulacion { get; set; }
         public string? FechaPostulacion { get; set; }
+        public string? Motivo { get; set; }
 
         public string? NombreEmpresa { get; set; }
         public string? TituloOferta { get; set; }
