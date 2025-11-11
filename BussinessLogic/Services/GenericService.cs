@@ -40,10 +40,10 @@ namespace BussinessLogic.Services
                 nuevoUsuario.Email = email;
                 //el rol que va a tener es en base al dominio del email
                 string dominio = email.Split('@')[1].ToLower();
-                if (dominio == Usuario.DominioAdmin)
-                    nuevoUsuario.IdRol = Rol.IdRolAdmin;
+                // if (dominio == Usuario.DominioAdmin)
+                //     nuevoUsuario.IdRol = Rol.IdRolAdmin;
 
-                else if (dominio == Usuario.DominioCandidato)
+                if (dominio == Usuario.DominioCandidato)
                     nuevoUsuario.IdRol = Rol.IdRolCandidato;
                 else
                     nuevoUsuario.IdRol = Rol.IdRolEmpresa;

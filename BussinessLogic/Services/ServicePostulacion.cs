@@ -499,6 +499,8 @@ namespace BussinessLogic.Services
                     AnioEgreso = p.PerfilCandidato?.AnioEgreso,
                     Cv = p.PerfilCandidato?.Cv != null ? Convert.ToBase64String(p.PerfilCandidato.Cv) : null,
 
+                    FotoPerfil = p.PerfilCandidato.Usuario.FotoPerfil != null ? p.PerfilCandidato.Usuario.FotoPerfil : null,
+
                     // Oferta
                     IdOferta = p.Oferta?.Id ?? 0,
                     TituloOferta = p.Oferta?.Titulo,
