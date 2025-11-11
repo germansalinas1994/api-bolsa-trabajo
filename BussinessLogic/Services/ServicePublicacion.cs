@@ -28,6 +28,8 @@ namespace BussinessLogic.Services
                         .Include(l => l.Localidad)
                         .ThenInclude(p => p.Provincia)
                         .ThenInclude(p => p.Pais)
+                        .Include(o => o.OfertaCarreras)
+                        .ThenInclude(oc => oc.Carrera)
                 )
 
                     ).ToList();
@@ -64,6 +66,8 @@ namespace BussinessLogic.Services
                         .Include(l => l.Localidad)
                         .ThenInclude(p => p.Provincia)
                         .ThenInclude(p => p.Pais)
+                        .Include(o => o.OfertaCarreras)
+                        .ThenInclude(oc => oc.Carrera)
                     )
                 ).OrderByDescending(p => p.FechaModificacion).ToList();
 
@@ -161,9 +165,40 @@ namespace BussinessLogic.Services
                     await _unitOfWork.GenericRepository<OfertaHistorial>().Insert(ofertaHistorial);
                 }
 
+                // Crear registros de OfertaCarrera si se proporcionaron carreras
+                // Se crea un registro OfertaCarrera por cada carrera seleccionada
+                // Esto permite que una oferta tenga múltiples carreras asociadas
+                if (data.IdCarreras != null && data.IdCarreras.Count > 0)
+                {
+                    var carrerasUnicas = data.IdCarreras.Distinct().ToList();
+                    var fechaActual = DateTime.Now;
+                    
+                    foreach (var idCarrera in carrerasUnicas)
+                    {
+                        // Verificar que la carrera exista
+                        var carreraExiste = await _unitOfWork.GenericRepository<Carrera>().GetById(idCarrera);
+                        if (carreraExiste == null)
+                        {
+                            throw new ApiException($"La carrera con ID {idCarrera} no existe", (int)HttpStatusCode.BadRequest);
+                        }
+                        
+                        // Crear un nuevo registro OfertaCarrera para cada carrera
+                        var ofertaCarrera = new OfertaCarrera
+                        {
+                            IdOferta = oferta.Id,
+                            IdCarrera = idCarrera,
+                            FechaAlta = fechaActual,
+                            FechaModificacion = fechaActual
+                        };
+                        // Insertar el registro (cada carrera tiene su propio registro OfertaCarrera)
+                        await _unitOfWork.GenericRepository<OfertaCarrera>().Insert(ofertaCarrera);
+                    }
+                }
+
                 await _unitOfWork.CommitAsync();
 
-                // Obtener la oferta creada con todas las relaciones
+                // Obtener la oferta creada con todas las relaciones desde la base de datos
+                // Nota: Cargamos todas las OfertaCarreras y el mapeo de Mapster las filtrará por FechaBaja == null
                 var ofertaCreada = await _unitOfWork.GenericRepository<Oferta>()
                     .GetByIdIncludingSpecificRelations(oferta.Id,
                         q => q.Include(pe => pe.PerfilEmpresa)
@@ -173,6 +208,10 @@ namespace BussinessLogic.Services
                         .Include(l => l.Localidad)
                         .ThenInclude(p => p.Provincia)
                         .ThenInclude(p => p.Pais)
+                        .Include(o => o.OfertaCarreras)
+                        .ThenInclude(oc => oc.Carrera),
+                        asNoTracking: true,
+                        asSplitQuery: true
                     );
 
                 var ofertaDto = ofertaCreada.Adapt<OfertaDTO>();
@@ -247,6 +286,92 @@ namespace BussinessLogic.Services
                         await _unitOfWork.GenericRepository<OfertaHistorial>().Update(ultimoHistorial);
                     }
                 }
+
+                // Actualizar carreras si se proporcionan
+                // Se crea un nuevo registro OfertaCarrera por cada carrera nueva
+                if (data.IdCarreras != null && data.IdCarreras.Count > 0)
+                {
+                    // Eliminar duplicados si los hay
+                    var carrerasUnicas = data.IdCarreras.Distinct().ToList();
+                    
+                    // Obtener las carreras existentes (activas y eliminadas)
+                    var todasCarrerasExistentes = (await _unitOfWork.GenericRepository<OfertaCarrera>()
+                        .GetByCriteria(oc => oc.IdOferta == id))
+                        .ToList();
+                    
+                    var carrerasExistentes = todasCarrerasExistentes.Where(oc => oc.FechaBaja == null).ToList();
+
+                    // Marcar como eliminadas las carreras que ya no están en la lista
+                    foreach (var carreraExistente in carrerasExistentes)
+                    {
+                        if (!carrerasUnicas.Contains(carreraExistente.IdCarrera))
+                        {
+                            carreraExistente.FechaBaja = DateTime.Now;
+                            carreraExistente.FechaModificacion = DateTime.Now;
+                            await _unitOfWork.GenericRepository<OfertaCarrera>().Update(carreraExistente);
+                        }
+                    }
+
+                    // Agregar nuevas carreras que no existían o reactivar las que estaban eliminadas
+                    // Cada carrera nueva crea su propio registro OfertaCarrera
+                    var idsCarrerasExistentes = carrerasExistentes.Select(c => c.IdCarrera).ToList();
+                    var idsCarrerasEliminadas = todasCarrerasExistentes
+                        .Where(oc => oc.FechaBaja != null)
+                        .Select(c => c.IdCarrera)
+                        .ToList();
+                    var fechaActual = DateTime.Now;
+                    
+                    foreach (var idCarrera in carrerasUnicas)
+                    {
+                        // Verificar que la carrera exista
+                        var carreraExiste = await _unitOfWork.GenericRepository<Carrera>().GetById(idCarrera);
+                        if (carreraExiste == null)
+                        {
+                            throw new ApiException($"La carrera con ID {idCarrera} no existe", (int)HttpStatusCode.BadRequest);
+                        }
+                        
+                        if (!idsCarrerasExistentes.Contains(idCarrera))
+                        {
+                            if (idsCarrerasEliminadas.Contains(idCarrera))
+                            {
+                                var carreraEliminada = todasCarrerasExistentes
+                                    .FirstOrDefault(oc => oc.IdCarrera == idCarrera && oc.FechaBaja != null);
+                                if (carreraEliminada != null)
+                                {
+                                    carreraEliminada.FechaBaja = null;
+                                    carreraEliminada.FechaModificacion = fechaActual;
+                                    await _unitOfWork.GenericRepository<OfertaCarrera>().Update(carreraEliminada);
+                                }
+                            }
+                            else
+                            {
+                                // Crear un nuevo registro OfertaCarrera para esta carrera
+                                var nuevaOfertaCarrera = new OfertaCarrera
+                                {
+                                    IdOferta = id,
+                                    IdCarrera = idCarrera,
+                                    FechaAlta = fechaActual,
+                                    FechaModificacion = fechaActual
+                                };
+                                await _unitOfWork.GenericRepository<OfertaCarrera>().Insert(nuevaOfertaCarrera);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Si no se proporcionan carreras, marcar todas las existentes como eliminadas
+                    var carrerasExistentes = (await _unitOfWork.GenericRepository<OfertaCarrera>()
+                        .GetByCriteria(oc => oc.IdOferta == id && oc.FechaBaja == null))
+                        .ToList();
+                    
+                    foreach (var carreraExistente in carrerasExistentes)
+                    {
+                        carreraExistente.FechaBaja = DateTime.Now;
+                        carreraExistente.FechaModificacion = DateTime.Now;
+                        await _unitOfWork.GenericRepository<OfertaCarrera>().Update(carreraExistente);
+                    }
+                }
                 
                 await _unitOfWork.CommitAsync();
 
@@ -260,6 +385,10 @@ namespace BussinessLogic.Services
                         .Include(l => l.Localidad)
                         .ThenInclude(p => p.Provincia)
                         .ThenInclude(p => p.Pais)
+                        .Include(o => o.OfertaCarreras)
+                        .ThenInclude(oc => oc.Carrera),
+                        asNoTracking: true,
+                        asSplitQuery: true
                     );
 
                 var ofertaDto = ofertaActualizada.Adapt<OfertaDTO>();
@@ -459,6 +588,8 @@ namespace BussinessLogic.Services
                         .ThenInclude(p => p.Provincia)
                             .ThenInclude(p => p.Pais)
                     .Include(p => p.Postulaciones)
+                    .Include(o => o.OfertaCarreras)
+                        .ThenInclude(oc => oc.Carrera)
                     .OrderByDescending(o => o.FechaModificacion).ToList();
 
                 var ofertasDto = ofertas.Adapt<List<OfertaDTO>>();
@@ -605,8 +736,8 @@ namespace BussinessLogic.Services
                         Modalidad = o.Modalidad?.Codigo,
                         FechaInicio = o.FechaInicio.ToString("dd/MM/yyyy"),
                         FechaFin = o.FechaFin?.ToString("dd/MM/yyyy") ?? "",
-                        NombreCarrera = o.OfertaCarreras != null && o.OfertaCarreras.Any()
-                            ? string.Join(", ", o.OfertaCarreras.Select(oc => oc.Carrera?.Nombre))
+                        NombreCarrera = o.OfertaCarreras != null && o.OfertaCarreras.Any(oc => oc.FechaBaja == null && oc.Carrera != null)
+                            ? string.Join(", ", o.OfertaCarreras.Where(oc => oc.FechaBaja == null && oc.Carrera != null).Select(oc => oc.Carrera.Nombre))
                             : null,
                         CantidadPostulantes = o.Postulaciones?.Count ?? 0,
                         CartaPresentacion = null,
@@ -690,7 +821,9 @@ namespace BussinessLogic.Services
                         TipoContrato = o.TipoContrato?.Nombre,
                         NombreEmpresa = o.PerfilEmpresa?.RazonSocial,
                         NombreLocalidad = o.Localidad?.Nombre,
-                        NombreCarrera = o.OfertaCarreras.FirstOrDefault()?.Carrera?.Nombre ?? "Carrera no especificada",
+                        NombreCarrera = o.OfertaCarreras != null && o.OfertaCarreras.Any(oc => oc.FechaBaja == null && oc.Carrera != null)
+                            ? string.Join(", ", o.OfertaCarreras.Where(oc => oc.FechaBaja == null && oc.Carrera != null).Select(oc => oc.Carrera.Nombre))
+                            : null,
                         Cupos = historial?.Cupos ?? 1,
                         CantidadPostulantes = ultimosEstados.Count(),
                         FechaInicio = o.FechaInicio.ToString("yyyy-MM-dd"),

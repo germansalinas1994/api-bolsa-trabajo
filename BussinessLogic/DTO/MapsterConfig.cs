@@ -23,7 +23,12 @@ namespace BussinessLogic.DTO
                 .Map(d => d.TipoContrato, s => s.TipoContrato.Nombre)
                 .Map(d => d.Modalidad, s => s.Modalidad.Nombre)
                 .Map(d => d.FechaInicio, s => s.FechaInicio.ToShortDateString())
-                .Map(d => d.FechaFin, s => s.FechaFin.HasValue ? s.FechaFin.Value.ToShortDateString() : "");
+                .Map(d => d.FechaFin, s => s.FechaFin.HasValue ? s.FechaFin.Value.ToShortDateString() : "")
+                .Map(d => d.NombreCarrera, s => s.OfertaCarreras != null && s.OfertaCarreras.Any(oc => oc.FechaBaja == null && oc.Carrera != null && !string.IsNullOrEmpty(oc.Carrera.Nombre))
+                    ? string.Join(", ", s.OfertaCarreras
+                        .Where(oc => oc.FechaBaja == null && oc.Carrera != null && !string.IsNullOrEmpty(oc.Carrera.Nombre))
+                        .Select(oc => oc.Carrera.Nombre))
+                    : null);
 
 
             TypeAdapterConfig<TipoContrato, TipoContratoDTO>

@@ -27,6 +27,7 @@ namespace BussinessLogic.DTO
         [Required(ErrorMessage = "Los cupos son obligatorios")]
         [Range(1, int.MaxValue, ErrorMessage = "Debe haber al menos 1 cupo disponible")]
         public int? Cupos { get; set; }
+        public List<int>? IdCarreras { get; set; }
     }
 }
 
