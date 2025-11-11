@@ -39,6 +39,9 @@ namespace BussinessLogic.DTO
         // Campos calculados por el backend
         public int? PorcentajePerfil { get; set; }
         
+        // Competencias del candidato
+        public List<CompetenciaDTO>? Competencias { get; set; }
+        
         // Campos que no están en el diagrama (para compatibilidad UI)
         public string? Telefono { get; set; } // NULL - no existe en diagrama
         public string? Localidad { get; set; } // NULL - no está relacionado

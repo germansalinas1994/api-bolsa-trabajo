@@ -270,4 +270,72 @@ public class CandidatoController : GenericController
             throw new ApiException(ex);
         }
     }
+
+    // ========================================
+    // ENDPOINTS DE COMPETENCIAS
+    // ========================================
+    
+    [HttpGet]
+    [Route("get_all_competencias")]
+    public async Task<ApiResponse> GetAllCompetencias()
+    {
+        try
+        {
+            var competencias = await _serviceCandidato.GetAllCompetencias();
+            return new ApiResponse(competencias);
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+    
+    [HttpPost]
+    [Route("add_competencia")]
+    public async Task<ApiResponse> AddCompetencia([FromBody] CompetenciaPerfilRequest request)
+    {
+        try
+        {
+            await _serviceCandidato.AddCompetenciaAPerfil(request.PerfilId, request.CompetenciaId);
+            return new ApiResponse("Competencia agregada exitosamente");
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+    
+    [HttpDelete]
+    [Route("remove_competencia")]
+    public async Task<ApiResponse> RemoveCompetencia([FromQuery] int perfilId, [FromQuery] int competenciaId)
+    {
+        try
+        {
+            await _serviceCandidato.RemoveCompetenciaDePerfil(perfilId, competenciaId);
+            return new ApiResponse("Competencia eliminada exitosamente");
+        }
+        catch (ApiException e)
+        {
+            throw e;
+        }
+        catch (Exception ex)
+        {
+            throw new ApiException(ex);
+        }
+    }
+}
+
+// DTO para el request de agregar competencia
+public class CompetenciaPerfilRequest
+{
+    public int PerfilId { get; set; }
+    public int CompetenciaId { get; set; }
 }
